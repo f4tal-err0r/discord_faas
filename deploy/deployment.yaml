@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: discord-bot
+spec:
+  selector:
+    matchLabels:
+      app: discord-bot
+  template:
+    metadata:
+      labels:
+        app: discord-bot
+    spec:
+      replicas: 1
+      containers:
+      - name: discord-faas-controller
+        command: ["/app/discord-faas"]
+        args: ["start", "controller"]
+        image: discord-faas
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        volumeMounts:
+          - mountPath: /app/config.yml
+            name: config
+      - name: postgresql
+        image: postgres:latest
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          value: test_db
+        - name: POSTGRES_USER
+          value: test_user
+        - name: POSTGRES_PASSWORD
+          value: password
+        resources:
+          limits:
+            cpu: "1"
+            memory: "1Gi"
+          requests:
+            cpu: "0.5"
+            memory: "512Mi"
+      volumes:
+      - name: config
+        configMap:
+          name: discord-faas-config

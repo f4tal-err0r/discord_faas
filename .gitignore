@@ -1,0 +1,6 @@
+go.work
+config/**.*
+!config/example.yml
+skaffold.yaml
+app/
+deploy/*_private.*
