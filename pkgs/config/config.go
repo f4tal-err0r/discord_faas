@@ -9,18 +9,17 @@ import (
 type Config struct {
 	Discord *Discord
 	Domain  string
-	Docker  *Docker
 }
 
 type Discord struct {
-	Token     string
-	AdminId   string   //Discord ID of admin
-	Approvers []string //DiscordID of valid approvers
+	Token   string
+	AdminId []string //Discord ID of admin
+	Oauth   *Oauth
 }
 
-type Docker struct {
-	Registry string
-	Limit    int //Limit to number of images per Discord server
+type Oauth struct {
+	ClientID     string
+	ClientSecret string
 }
 
 func New(path string) *Config {
