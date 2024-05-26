@@ -15,7 +15,6 @@ import (
 )
 
 var (
-	cfg          *config.Config
 	oauthCfg     *oauth2.Config
 	state        string
 	codeVerifier string
@@ -23,12 +22,14 @@ var (
 )
 
 func init() {
-	cfg = config.New()
+	cfg, err := config.New()
+	if err != nil {
+		log.Fatal("ERR: Unable to fetch config: %w", err)
+	}
+	fmt.Printf("Config: %+v\n", cfg)
 	oauthCfg = &oauth2.Config{
-		//ClientID:     cfg.Discord.Oauth.ClientID,
-		//ClientSecret: cfg.Discord.Oauth.ClientSecret,
-		ClientID:     "1244042576579792937",
-		ClientSecret: "OKGkZf1wDmKmuDg45JoTykAQKfpQV_Ti",
+		ClientID:     cfg.Oauth.ClientID,
+		ClientSecret: cfg.Oauth.ClientSecret,
 		RedirectURL:  "http://localhost:8080/callback",
 		Scopes:       []string{"guilds", "guilds.members.read"},
 		Endpoint: oauth2.Endpoint{
@@ -68,7 +69,6 @@ func StartAuth() (*oauth2.Token, error) {
 		oauth2.SetAuthURLParam("code_challenge", codeChallenge),
 		oauth2.SetAuthURLParam("code_challenge_method", "S256"))
 
-	fmt.Println(url)
 	browser.OpenURL(url)
 
 	go func() {

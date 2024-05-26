@@ -40,3 +40,5 @@ require (
 )
 
 replace github.com/f4tal-err0r/discord_faas/pkgs/discord => ../pkgs/discord
+
+replace github.com/f4tal-err0r/discord_faas/pkgs/config => ../pkgs/config

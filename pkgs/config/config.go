@@ -1,43 +1,53 @@
 package config
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/spf13/viper"
 )
 
 type Config struct {
-	Discord *Discord
-	Domain  string
+	Discord Discord `mapstructure:"DISCORD"`
+	Domain  string  `mapstructure:"DOMAIN"`
+	Oauth   Oauth   `mapstructure:"OAUTH"`
 }
 
 type Discord struct {
 	Token   string   `mapstructure:"BOT_TOKEN"`
-	AdminId []string //Discord ID of admin
-	Oauth   *Oauth
+	AdminId []string `mapstructure:"ADMIN_ID"`
 }
 
 type Oauth struct {
-	ClientID     string `mapstructure:"OAUTH_CLIENTID"`
-	ClientSecret string `mapstructure:"OAUTH_CLIENTSECRET"`
+	ClientID     string `mapstructure:"CLIENTID"`
+	ClientSecret string `mapstructure:"CLIENTSECRET"`
 }
 
-func New() *Config {
-	var c *Config
+func New() (*Config, error) {
+	var config Config
 
-	viper.SetEnvPrefix("DFAAS")
-	viper.AutomaticEnv()
+	// Set up Viper to read the config.yaml file
+	viper.SetConfigName("config")
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath(".")
 
-	// // Read configuration file
-	// if err := viper.ReadInConfig(); err != nil {
-	// 	log.Fatal("ERROR: Unable to read in config")
-	// }
+	// Attempt to read the config file
+	if err := viper.ReadInConfig(); err != nil {
+		// Check if the error is due to the file not existing
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			log.Fatalf("Error reading config file: %s", err)
+		} else {
+			fmt.Println("Config file not found, using environment variables only.")
+		}
+	}
+	// Set up Viper to read environment variables
+	viper.BindEnv("oauth.clientid", "DFAAS_OAUTH_CLIENTID")
+	viper.BindEnv("oauth.clientsecret", "DFAAS_OAUTH_CLIENTSECRET")
 
-	// Unmarshal configuration into struct
-	var cfg Config
-	if err := viper.Unmarshal(&cfg); err != nil {
-		log.Fatal("ERROR: Unable to marshal config")
+	// Unmarshal the configuration into the struct
+	if err := viper.Unmarshal(&config); err != nil {
+		return nil, fmt.Errorf("unable to unmarshal config: %w", err)
 	}
 
-	return c
+	return &config, nil
 }

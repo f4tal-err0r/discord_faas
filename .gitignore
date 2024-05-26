@@ -5,3 +5,4 @@ skaffold.yaml
 app/
 deploy/*_private.*
 initenv.sh
+config.yaml
