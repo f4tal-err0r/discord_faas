@@ -7,8 +7,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func init() {
+	rootCmd.AddCommand(serverCmd)
+	rootCmd.AddCommand(discordCmd)
+}
+
 var rootCmd = &cobra.Command{
-	Use:   "Discord FaaS",
+	Use:   os.Args[0],
 	Short: "Discord Functions-as-a-Service",
 	Long:  "Bot frontend to integrate discord with an eventing platform",
 }

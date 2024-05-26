@@ -12,26 +12,26 @@ type Config struct {
 }
 
 type Discord struct {
-	Token   string
+	Token   string   `mapstructure:"BOT_TOKEN"`
 	AdminId []string //Discord ID of admin
 	Oauth   *Oauth
 }
 
 type Oauth struct {
-	ClientID     string
-	ClientSecret string
+	ClientID     string `mapstructure:"OAUTH_CLIENTID"`
+	ClientSecret string `mapstructure:"OAUTH_CLIENTSECRET"`
 }
 
-func New(path string) *Config {
+func New() *Config {
 	var c *Config
 
 	viper.SetEnvPrefix("DFAAS")
 	viper.AutomaticEnv()
 
-	// Read configuration file
-	if err := viper.ReadInConfig(); err != nil {
-		log.Fatal("ERROR: Unable to read in config")
-	}
+	// // Read configuration file
+	// if err := viper.ReadInConfig(); err != nil {
+	// 	log.Fatal("ERROR: Unable to read in config")
+	// }
 
 	// Unmarshal configuration into struct
 	var cfg Config

@@ -5,12 +5,10 @@ import (
 )
 
 var serverCmd = &cobra.Command{
-	Use:   "Discord FaaS server",
-	Short: "Discord Functions-as-a-Service Server",
+	Use:   "server",
+	Short: "Functions-as-a-Service Server",
 	Long:  "Discord FaaS kubernetes controller",
-}
-
-func init() {
-	rootCmd.AddCommand(serverCmd)
-	// startCmd.PersistentFlags()
+	Run: func(cmd *cobra.Command, args []string) {
+		// Do Stuff Here
+	},
 }

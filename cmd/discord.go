@@ -1,15 +1,30 @@
 package main
 
-import "github.com/spf13/cobra"
+import (
+	"fmt"
+	"log"
+
+	"github.com/f4tal-err0r/discord_faas/pkgs/discord"
+	"github.com/spf13/cobra"
+)
 
 func init() {
-	rootCmd.AddCommand(discordCmd)
-	// startCmd.PersistentFlags()
+	discordCmd.AddCommand(login)
 }
 
 var discordCmd = &cobra.Command{
+	Use:   "discord",
 	Short: "Commands for interfacing w/ Discord",
+}
+
+var login = &cobra.Command{
+	Use:   "login",
+	Short: "Auth to your Discord Guild",
 	Run: func(cmd *cobra.Command, args []string) {
-		// Do Stuff Here
+		if callback, err := discord.StartAuth(); err != nil {
+			log.Fatal(err)
+		} else {
+			fmt.Print(callback)
+		}
 	},
 }
