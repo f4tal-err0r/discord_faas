@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/f4tal-err0r/discord_faas/pkgs/discord"
@@ -21,10 +20,8 @@ var login = &cobra.Command{
 	Use:   "login",
 	Short: "Auth to your Discord Guild",
 	Run: func(cmd *cobra.Command, args []string) {
-		if callback, err := discord.StartAuth(); err != nil {
+		if _, err := discord.StartAuth(); err != nil {
 			log.Fatal(err)
-		} else {
-			fmt.Print(callback)
 		}
 	},
 }

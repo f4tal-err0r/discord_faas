@@ -3,6 +3,8 @@ package config
 import (
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 
 	"github.com/spf13/viper"
 )
@@ -36,12 +38,12 @@ func New() (*Config, error) {
 		// Check if the error is due to the file not existing
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
 			log.Fatalf("Error reading config file: %s", err)
-		} else {
-			fmt.Println("Config file not found, using environment variables only.")
 		}
 	}
-	// Set up Viper to read environment variables
+	// Set up Viper to read secret environment variables
 	viper.BindEnv("oauth.clientid", "DFAAS_OAUTH_CLIENTID")
+	viper.BindEnv("oauth.clientsecret", "DFAAS_OAUTH_CLIENTSECRET")
+	viper.BindEnv("discord.token", "DFAAS_OAUTH_CLIENTID")
 	viper.BindEnv("oauth.clientsecret", "DFAAS_OAUTH_CLIENTSECRET")
 
 	// Unmarshal the configuration into the struct
@@ -50,4 +52,16 @@ func New() (*Config, error) {
 	}
 
 	return &config, nil
+}
+
+func (c *Config) FetchCache() string {
+	cache, err := os.UserCacheDir()
+	if err != nil {
+		log.Fatalf("Unable to fetch cache directory: %v", err)
+	}
+	cacheDir := cache + "/dfaas"
+	if err := os.MkdirAll(cacheDir, 0700); err != nil {
+		log.Fatalf("Unable to create cache directory: %v", err)
+	}
+	return filepath.Join(cacheDir, "token.json")
 }

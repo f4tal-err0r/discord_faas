@@ -5,9 +5,12 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/f4tal-err0r/discord_faas/pkgs/config"
 	"github.com/pkg/browser"
@@ -19,6 +22,7 @@ var (
 	state        string
 	codeVerifier string
 	tokenChan    chan *oauth2.Token
+	cachefp      string
 )
 
 func init() {
@@ -26,7 +30,7 @@ func init() {
 	if err != nil {
 		log.Fatal("ERR: Unable to fetch config: %w", err)
 	}
-	fmt.Printf("Config: %+v\n", cfg)
+	cachefp = cfg.FetchCache()
 	oauthCfg = &oauth2.Config{
 		ClientID:     cfg.Oauth.ClientID,
 		ClientSecret: cfg.Oauth.ClientSecret,
@@ -69,6 +73,7 @@ func StartAuth() (*oauth2.Token, error) {
 		oauth2.SetAuthURLParam("code_challenge", codeChallenge),
 		oauth2.SetAuthURLParam("code_challenge_method", "S256"))
 
+	fmt.Printf("Open Browser to auth: %s", url)
 	browser.OpenURL(url)
 
 	go func() {
@@ -76,19 +81,48 @@ func StartAuth() (*oauth2.Token, error) {
 	}()
 
 	token := <-tokenChan
+	if err := saveToken(token); err != nil {
+		log.Printf("\nWARN: Unable to cache Oauth2 token: %v", err)
+	}
 	return token, nil
+}
+
+func GetToken() (string, error) {
+	var token oauth2.Token
+
+	f, err := os.Open(cachefp)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	err = json.NewDecoder(f).Decode(&token)
+	if token.Expiry.After(time.Now()) {
+		StartAuth()
+	}
+	return token.AccessToken, err
+}
+
+func saveToken(token *oauth2.Token) error {
+	f, err := os.Create(cachefp)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	return json.NewEncoder(f).Encode(token)
 }
 
 func handleCallback(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Query().Get("state") != state {
-		http.Error(w, "State is not valid", http.StatusBadRequest)
+		log.Fatal("State is not valid")
 		return
 	}
 
 	code := r.URL.Query().Get("code")
 	token, err := oauthCfg.Exchange(context.Background(), code, oauth2.SetAuthURLParam("code_verifier", codeVerifier))
 	if err != nil {
-		http.Error(w, "Failed to exchange token: "+err.Error(), http.StatusInternalServerError)
+		log.Fatal("Failed to exchange token: " + err.Error())
 		return
 	}
 
