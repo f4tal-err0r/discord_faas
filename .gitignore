@@ -6,3 +6,4 @@ app/
 deploy/*_private.*
 initenv.sh
 config.yaml
+bin/
