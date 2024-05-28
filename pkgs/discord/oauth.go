@@ -61,7 +61,7 @@ func generateCodeChallenge(codeVerifier string) (string, error) {
 	return base64.RawURLEncoding.EncodeToString(h.Sum(nil)), nil
 }
 
-func startAuth() (*oauth2.Token, error) {
+func StartAuth() (*oauth2.Token, error) {
 	http.HandleFunc("/callback", handleCallback)
 
 	codeChallenge, err := generateCodeChallenge(codeVerifier)
@@ -81,6 +81,7 @@ func startAuth() (*oauth2.Token, error) {
 	}()
 
 	token := <-tokenChan
+	token.Expiry = time.Now().Add(15 * time.Minute)
 	if err := saveToken(token); err != nil {
 		log.Printf("\nWARN: Unable to cache Oauth2 token: %v", err)
 	}
@@ -92,15 +93,33 @@ func GetToken() (string, error) {
 
 	f, err := os.Open(cachefp)
 	if err != nil {
-		return "", err
+		token, err := StartAuth()
+		if err != nil {
+			log.Fatalf("\nERROR: Failed to auth to Discord: %v", err)
+		}
+		return token.AccessToken, nil
 	}
 	defer f.Close()
 
 	err = json.NewDecoder(f).Decode(&token)
-	if token.Expiry.After(time.Now()) {
-		startAuth()
+	if err != nil {
+		return "", err
 	}
-	return token.AccessToken, err
+
+	tokenSource := oauthCfg.TokenSource(context.Background(), &token)
+	refreshToken, err := tokenSource.Token()
+	if err != nil {
+		newToken, err := StartAuth()
+		if err != nil {
+			log.Fatalf("\nERROR: Failed to auth to Discord: %v", err)
+		}
+		if err := saveToken(newToken); err != nil {
+			log.Printf("\nWARN: Unable to cache Oauth2 token: %v", err)
+		}
+		return newToken.AccessToken, nil
+	}
+
+	return refreshToken.AccessToken, nil
 }
 
 func saveToken(token *oauth2.Token) error {
