@@ -13,12 +13,6 @@ func GetCurrentUser(token string) *discordgo.User {
 		log.Fatalf("Error creating Discord session: %v", err)
 	}
 
-	err = session.Open()
-	if err != nil {
-		log.Fatalf("Error opening Discord session: %v", err)
-	}
-	defer session.Close()
-
 	user, err := session.User("@me")
 	if err != nil {
 		log.Fatalf("Error getting current user: %v", err)

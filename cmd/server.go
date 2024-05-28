@@ -27,7 +27,7 @@ var startCmd = &cobra.Command{
 }
 
 var refreshCmd = &cobra.Command{
-	Use:   "refresh",
+	Use:   "ident",
 	Short: "Start Discord bot",
 	Run: func(cmd *cobra.Command, args []string) {
 		if d, err := discord.GetToken(); err != nil {

@@ -31,10 +31,9 @@ func init() {
 	}
 	cachefp = cfg.FetchCache()
 	oauthCfg = &oauth2.Config{
-		ClientID:     cfg.Oauth.ClientID,
-		ClientSecret: cfg.Oauth.ClientSecret,
-		RedirectURL:  "http://localhost:8080/callback",
-		Scopes:       []string{"guilds", "guilds.members.read"},
+		ClientID:    cfg.Oauth.ClientID,
+		RedirectURL: "http://localhost:8080/callback",
+		Scopes:      []string{"guilds", "guilds.members.read", "identify"},
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  "https://discord.com/oauth2/authorize",
 			TokenURL: "https://discord.com/api/oauth2/token",
@@ -123,6 +122,10 @@ func GetToken() (string, error) {
 		log.Printf("\nWARN: Unable to cache Oauth2 token: %v", err)
 	}
 
+	user := GetCurrentUser(refreshToken.AccessToken)
+
+	log.Printf("User: %+v", user)
+	log.Printf("ID: %+v", user.ID)
 	return refreshToken.AccessToken, nil
 }
 
