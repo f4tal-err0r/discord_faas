@@ -16,8 +16,7 @@ type Config struct {
 }
 
 type Discord struct {
-	Token   string   `mapstructure:"BOT_TOKEN"`
-	AdminId []string `mapstructure:"ADMIN_ID"`
+	Token string `mapstructure:"BOT_TOKEN"`
 }
 
 type Oauth struct {
@@ -43,8 +42,7 @@ func New() (*Config, error) {
 	// Set up Viper to read secret environment variables
 	viper.BindEnv("oauth.clientid", "DFAAS_OAUTH_CLIENTID")
 	viper.BindEnv("oauth.clientsecret", "DFAAS_OAUTH_CLIENTSECRET")
-	viper.BindEnv("discord.token", "DFAAS_OAUTH_CLIENTID")
-	viper.BindEnv("oauth.clientsecret", "DFAAS_OAUTH_CLIENTSECRET")
+	viper.BindEnv("discord.token", "DFAAS_BOT_TOKEN")
 
 	// Unmarshal the configuration into the struct
 	if err := viper.Unmarshal(&config); err != nil {

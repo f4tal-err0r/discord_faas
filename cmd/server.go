@@ -21,6 +21,6 @@ var startCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Start Discord bot",
 	Run: func(cmd *cobra.Command, args []string) {
-		discord.Start()
+		discord.StartDiscordBot()
 	},
 }

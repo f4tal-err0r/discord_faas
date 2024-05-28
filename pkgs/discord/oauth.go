@@ -61,7 +61,7 @@ func generateCodeChallenge(codeVerifier string) (string, error) {
 	return base64.RawURLEncoding.EncodeToString(h.Sum(nil)), nil
 }
 
-func StartAuth() (*oauth2.Token, error) {
+func startAuth() (*oauth2.Token, error) {
 	http.HandleFunc("/callback", handleCallback)
 
 	codeChallenge, err := generateCodeChallenge(codeVerifier)
@@ -98,7 +98,7 @@ func GetToken() (string, error) {
 
 	err = json.NewDecoder(f).Decode(&token)
 	if token.Expiry.After(time.Now()) {
-		StartAuth()
+		startAuth()
 	}
 	return token.AccessToken, err
 }
