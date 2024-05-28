@@ -10,7 +10,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/f4tal-err0r/discord_faas/pkgs/config"
 	"github.com/pkg/browser"
@@ -81,7 +80,7 @@ func StartAuth() (*oauth2.Token, error) {
 	}()
 
 	token := <-tokenChan
-	token.Expiry = time.Now().Add(15 * time.Minute)
+
 	if err := saveToken(token); err != nil {
 		log.Printf("\nWARN: Unable to cache Oauth2 token: %v", err)
 	}
@@ -109,6 +108,7 @@ func GetToken() (string, error) {
 	tokenSource := oauthCfg.TokenSource(context.Background(), &token)
 	refreshToken, err := tokenSource.Token()
 	if err != nil {
+		log.Println(err)
 		newToken, err := StartAuth()
 		if err != nil {
 			log.Fatalf("\nERROR: Failed to auth to Discord: %v", err)
@@ -117,6 +117,10 @@ func GetToken() (string, error) {
 			log.Printf("\nWARN: Unable to cache Oauth2 token: %v", err)
 		}
 		return newToken.AccessToken, nil
+	}
+
+	if err := saveToken(refreshToken); err != nil {
+		log.Printf("\nWARN: Unable to cache Oauth2 token: %v", err)
 	}
 
 	return refreshToken.AccessToken, nil
