@@ -1,15 +1,15 @@
 package main
 
 import (
-	"fmt"
+	"log"
+	"time"
 
-	"github.com/f4tal-err0r/discord_faas/pkgs/discord"
 	"github.com/spf13/cobra"
 )
 
 func init() {
 	rootCmd.AddCommand(serverCmd)
-	rootCmd.AddCommand(refreshCmd)
+	serverCmd.AddCommand(startCmd)
 }
 
 var serverCmd = &cobra.Command{
@@ -22,16 +22,9 @@ var startCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Start Discord bot",
 	Run: func(cmd *cobra.Command, args []string) {
-		discord.StartDiscordBot()
-	},
-}
-
-var refreshCmd = &cobra.Command{
-	Use:   "ident",
-	Short: "Start Discord bot",
-	Run: func(cmd *cobra.Command, args []string) {
-		if d, err := discord.GetToken(); err != nil {
-			fmt.Println(d)
+		for {
+			time.Sleep(10 * time.Second)
+			log.Println("Test Out Live Cmd")
 		}
 	},
 }

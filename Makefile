@@ -18,6 +18,7 @@ help:
 test:
 	go test -v -race -buildvcs ./...
 
+
 ## test/cover: run all tests and display coverage
 .PHONY: test/cover
 test/cover:
@@ -38,14 +39,15 @@ build/windows:
 run: build
 	./bin/${BINARY_NAME}
 
-## run/live: run the application with reloading on file changes
-.PHONY: dev/live
+.PHONY: run/live
 run/live:
-	go run github.com/cosmtrek/air@v1.43.0 \
+	go run github.com/cosmtrek/air@v1.52.0 \
 		--build.cmd "make build" --build.bin "./bin/${BINARY_NAME}" --build.delay "100" \
+		--build.args_bin "server,start" \
+		--build.exclude_dir "runtimes,bin" \
 		--misc.clean_on_exit "true"
 
 ## production/deploy: deploy the application to production
 .PHONY: production/deploy
 production/deploy:
-	GOOS=linux GOARCH=amd64 go build -ldflags='-s' -o=bin/linux_amd64/${BINARY_NAME} ${MAIN_PACKAGE_PATH}
+	GOOS=linux GOARCH=amd64 go build -ldflags='-s' -o=./bin/${BINARY_NAME} ${MAIN_PACKAGE_PATH}
