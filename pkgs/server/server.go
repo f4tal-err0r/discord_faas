@@ -19,7 +19,7 @@ func Start() {
 	if err := createDirIfNotExist(cfg.Filestore); err != nil {
 		log.Fatalf("ERR: Unable to create dir %s: %v", cfg.Filestore, err)
 	}
-	db, err := InitDB(cfg.Filestore)
+	_, err = InitDB(cfg.Filestore)
 	if err != nil {
 		log.Fatalf("ERR: Unable to create sqlitedb: %v", err)
 	}

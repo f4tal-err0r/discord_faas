@@ -7,7 +7,7 @@ import (
 
 type Cache struct {
 	Data map[string]Data
-	*sync.Mutex
+	sync.RWMutex
 }
 
 type Data struct {
@@ -21,7 +21,7 @@ func New() *Cache {
 	}
 }
 
-func (c Cache) Set(k string, v interface{}, exp time.Duration) {
+func (c *Cache) Set(k string, v interface{}, exp time.Duration) {
 	c.Lock()
 	defer c.Unlock()
 
@@ -32,9 +32,9 @@ func (c Cache) Set(k string, v interface{}, exp time.Duration) {
 	}
 }
 
-func (c Cache) Get(k string) (interface{}, bool) {
-	c.Lock()
-	defer c.Unlock()
+func (c *Cache) Get(k string) (interface{}, bool) {
+	c.RLock()
+	defer c.RUnlock()
 
 	if v, ok := c.Data[k]; !ok || time.Now().After(v.ttl) {
 		delete(c.Data, k)

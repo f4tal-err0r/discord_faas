@@ -11,7 +11,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/f4tal-err0r/discord_faas/pkgs/discord"
+	"github.com/f4tal-err0r/discord_faas/pkgs/shared"
 	"github.com/pkg/browser"
 	"golang.org/x/oauth2"
 )
@@ -27,7 +27,7 @@ var (
 func init() {
 	cachefp = FetchCache("token")
 	oauthCfg = &oauth2.Config{
-		ClientID:    cfg.Oauth.ClientID,
+		// ClientID:    cfg.Oauth.ClientID,
 		RedirectURL: "http://localhost:8080/callback",
 		Scopes:      []string{"guilds", "guilds.members.read", "identify"},
 		Endpoint: oauth2.Endpoint{
@@ -118,7 +118,7 @@ func GetToken() (string, error) {
 		log.Printf("\nWARN: Unable to cache Oauth2 token: %v", err)
 	}
 
-	user := discord.GetCurrentUser(refreshToken.AccessToken)
+	user := shared.GetCurrentUser(refreshToken.AccessToken)
 
 	log.Printf("User: %+v", user)
 	log.Printf("ID: %+v", user.ID)

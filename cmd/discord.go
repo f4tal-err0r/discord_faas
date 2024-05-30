@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/f4tal-err0r/discord_faas/pkgs/discord"
+	"github.com/f4tal-err0r/discord_faas/pkgs/client"
 	"github.com/spf13/cobra"
 )
 
@@ -20,7 +20,7 @@ var login = &cobra.Command{
 	Use:   "login",
 	Short: "Auth to your Discord Guild",
 	Run: func(cmd *cobra.Command, args []string) {
-		if _, err := discord.StartAuth(); err != nil {
+		if _, err := client.StartAuth(); err != nil {
 			log.Fatal(err)
 		}
 	},
