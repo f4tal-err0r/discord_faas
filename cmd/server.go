@@ -1,9 +1,7 @@
 package main
 
 import (
-	"log"
-	"time"
-
+	"github.com/f4tal-err0r/discord_faas/pkgs/server"
 	"github.com/spf13/cobra"
 )
 
@@ -22,9 +20,6 @@ var startCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Start Discord bot",
 	Run: func(cmd *cobra.Command, args []string) {
-		for {
-			time.Sleep(10 * time.Second)
-			log.Println("Test Out Live Cmd")
-		}
+		server.Start()
 	},
 }

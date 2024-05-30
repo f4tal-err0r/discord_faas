@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/f4tal-err0r/discord_faas/pkgs/config"
 )
@@ -19,11 +21,25 @@ func Start() {
 	if err := createDirIfNotExist(cfg.Filestore); err != nil {
 		log.Fatalf("ERR: Unable to create dir %s: %v", cfg.Filestore, err)
 	}
-	_, err = InitDB(cfg.Filestore)
+	db, err = InitDB(cfg.Filestore + "/dfaas.db")
 	if err != nil {
 		log.Fatalf("ERR: Unable to create sqlitedb: %v", err)
 	}
 
+	dc := GetSession(cfg)
+	log.Print("Bot Started...")
+
+	go func() {
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
+		<-c
+
+		dc.Close()
+		log.Print("Bot Shutdown.")
+	}()
+
+	log.Print("func cont")
+	select {}
 }
 
 func createDirIfNotExist(dirPath string) error {
@@ -36,7 +52,7 @@ func createDirIfNotExist(dirPath string) error {
 		}
 		fmt.Printf("Directory %s created successfully\n", dirPath)
 	} else {
-		fmt.Printf("Directory %s already exists\n", dirPath)
+		return nil
 	}
 	return nil
 }

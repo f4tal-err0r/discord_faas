@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/f4tal-err0r/discord_faas/pkgs/shared"
 	"github.com/pkg/browser"
 	"golang.org/x/oauth2"
 )
@@ -118,10 +117,6 @@ func GetToken() (string, error) {
 		log.Printf("\nWARN: Unable to cache Oauth2 token: %v", err)
 	}
 
-	user := shared.GetCurrentUser(refreshToken.AccessToken)
-
-	log.Printf("User: %+v", user)
-	log.Printf("ID: %+v", user.ID)
 	return refreshToken.AccessToken, nil
 }
 
