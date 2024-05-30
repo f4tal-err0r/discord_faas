@@ -1,4 +1,4 @@
-package discord
+package client
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/f4tal-err0r/discord_faas/pkgs/config"
+	"github.com/f4tal-err0r/discord_faas/pkgs/discord"
 	"github.com/pkg/browser"
 	"golang.org/x/oauth2"
 )
@@ -25,11 +25,7 @@ var (
 )
 
 func init() {
-	cfg, err := config.New()
-	if err != nil {
-		log.Fatal("ERR: Unable to fetch config: %w", err)
-	}
-	cachefp = cfg.FetchCache()
+	cachefp = FetchCache("token")
 	oauthCfg = &oauth2.Config{
 		ClientID:    cfg.Oauth.ClientID,
 		RedirectURL: "http://localhost:8080/callback",
@@ -122,7 +118,7 @@ func GetToken() (string, error) {
 		log.Printf("\nWARN: Unable to cache Oauth2 token: %v", err)
 	}
 
-	user := GetCurrentUser(refreshToken.AccessToken)
+	user := discord.GetCurrentUser(refreshToken.AccessToken)
 
 	log.Printf("User: %+v", user)
 	log.Printf("ID: %+v", user.ID)

@@ -1,4 +1,4 @@
-package discord
+package server
 
 import (
 	"log"
@@ -26,11 +26,14 @@ func StartDiscordBot() {
 		log.Fatal("ERR: Unable to fetch config: %w", err)
 	}
 
-	dc := GetSession(cfg)
-	log.Println("Bot running....")
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-	<-c
 
-	dc.Close()
+	go func() {
+		dc := GetSession(cfg)
+		defer dc.Close()
+		log.Println("Bot running....")
+
+		signal.Notify(c, os.Interrupt)
+		<-c
+	}()
 }

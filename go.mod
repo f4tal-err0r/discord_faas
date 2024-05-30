@@ -6,6 +6,7 @@ toolchain go1.22.3
 
 require (
 	github.com/bwmarrin/discordgo v0.27.1
+	github.com/mattn/go-sqlite3 v1.14.22
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.18.2
