@@ -13,20 +13,6 @@ import (
 var UserGuildsCache = cache.New()
 var GuildCache = cache.New()
 
-func GetCurrentUser(token string) *discordgo.User {
-	session, err := discordgo.New("Bearer " + token)
-	if err != nil {
-		log.Fatalf("Error creating Discord session: %v", err)
-	}
-
-	user, err := session.User("@me")
-	if err != nil {
-		log.Fatalf("Error getting current user: %v", err)
-	}
-
-	return user
-}
-
 func GetUserGuildInfo(gid string, user *discordgo.User) *discordgo.Member {
 	cfg, err := config.New()
 	if err != nil {
@@ -44,16 +30,11 @@ func GetUserGuildInfo(gid string, user *discordgo.User) *discordgo.Member {
 	return member
 }
 
-func GetGuildInfo(gid string) *discordgo.Guild {
-	cfg, err := config.New()
-	if err != nil {
-		log.Fatal("ERR: Unable to fetch config: %w", err)
-	}
+func GetGuildInfo(sess *discordgo.Session, gid string) *discordgo.Guild {
 	if v, _ := GuildCache.Get(gid); v != nil {
 		return v.(*discordgo.Guild)
 	}
-	botSession := GetSession(cfg)
-	guild, err := botSession.Guild(gid)
+	guild, err := sess.Guild(gid)
 	if err != nil {
 		log.Fatalf("Error getting guild: %v", err)
 	}

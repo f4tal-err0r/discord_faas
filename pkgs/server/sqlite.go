@@ -112,7 +112,7 @@ func InitGuildData(db *sql.DB) {
 
 	session := GetSession(cfg)
 
-	botGuilds, err := session.UserGuilds(100, "", "")
+	botGuilds, err := session.UserGuilds(100, "", "", false)
 	if err != nil {
 		log.Fatalf("Error getting guilds: %v", err)
 	}
@@ -132,7 +132,7 @@ func InitGuildData(db *sql.DB) {
 			log.Fatalf("Error getting default channel: %v", err)
 		}
 
-		guild := GetGuildInfo(gid)
+		guild := GetGuildInfo(session, gid)
 
 		defaultChan, err := GetDefaultChannel(session, guild.ID)
 		if err != nil {
