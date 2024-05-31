@@ -38,7 +38,7 @@ func Start() {
 		log.Print("Bot Shutdown.")
 	}()
 
-	log.Print("func cont")
+	initGuildData(db)
 	select {}
 }
 
