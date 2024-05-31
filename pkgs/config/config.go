@@ -11,6 +11,7 @@ type Config struct {
 	Discord   Discord `mapstructure:"DISCORD"`
 	Domain    string  `mapstructure:"DOMAIN"`
 	Filestore string  `mapstructure:"FILESTORE"`
+	DBPath    string  `mapstructure:"DBPATH"`
 }
 
 type Discord struct {

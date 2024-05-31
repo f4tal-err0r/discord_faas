@@ -29,12 +29,15 @@ type CommandsTableRow struct {
 	guildid       uint64
 }
 
-func InitDB(filePath string) (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", filePath)
+func NewDB(cfg *config.Config) (*sql.DB, error) {
+	db, err := sql.Open("sqlite3", cfg.DBPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %v", err)
 	}
+	return db, nil
+}
 
+func InitDB(db *sql.DB) error {
 	CreateTablesDb := `
 	CREATE TABLE IF NOT EXISTS GuildMetadata (
 		guildid INTEGER PRIMARY KEY,
@@ -60,12 +63,12 @@ func InitDB(filePath string) (*sql.DB, error) {
 		FOREIGN KEY(guildid) REFERENCES GuildMetadata(guildid)
 	);
 	`
-	_, err = db.Exec(CreateTablesDb)
+	_, err := db.Exec(CreateTablesDb)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create table: %v", err)
+		log.Fatalf("failed to create table: %v", err)
 	}
 
-	return db, nil
+	return nil
 }
 
 func RowWriter(db *sql.DB, v interface{}) error {
@@ -99,7 +102,7 @@ func RowWriter(db *sql.DB, v interface{}) error {
 	return fmt.Errorf("Error: Invalid type provided to Row Writer")
 }
 
-func initGuildData(db *sql.DB) {
+func InitGuildData(db *sql.DB) {
 	var newGuilds []string
 
 	cfg, err := config.New()
@@ -147,7 +150,7 @@ func initGuildData(db *sql.DB) {
 	}
 }
 
-func EditCmdsDb(db *sql.DB, cmd *CommandsTableRow) {
+func UpdateCmdsDb(db *sql.DB, cmd *CommandsTableRow) {
 	sql := `UPDATE Commands SET last_modified = ?, hash = ? WHERE command = ? AND guildid = ?`
 	time := time.Now()
 	_, err := db.Exec(sql, time, cmd.hash, cmd.command, cmd.guildid)
@@ -168,4 +171,13 @@ func GetCmdsDb(db *sql.DB, cmd string, guildid uint64) *CommandsTableRow {
 		log.Fatalf("Error fetching command: %v", err)
 	}
 	return &row
+}
+
+// Remove guild row from db if bot is no longer in guild
+func RemoveGuildRow(db *sql.DB, guildid string) {
+	sql := `DELETE FROM GuildMetadata WHERE guildid = ?`
+	_, err := db.Exec(sql, guildid)
+	if err != nil {
+		log.Fatalf("Error deleting guild: %v", err)
+	}
 }

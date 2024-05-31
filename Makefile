@@ -18,6 +18,9 @@ help:
 test:
 	go test -v -race -buildvcs ./...
 
+fmt:
+	@gofmt -l -w $(shell find . -type f -name '*.go' -not -path "./vendor/*")
+
 
 ## test/cover: run all tests and display coverage
 .PHONY: test/cover
