@@ -29,6 +29,7 @@ type CommandsTableRow struct {
 	Hash          string
 	Last_modified *time.Time
 	Guildid       uint16
+	Desc          string
 }
 
 var CmdsCache = cache.New()
@@ -65,6 +66,7 @@ func InitDB(db *sql.DB) error {
 		created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 		last_modified TIMESTAMP NOT NULL,
 		guildid INTEGER,
+		desc TEXT,
 		FOREIGN KEY(guildid) REFERENCES GuildMetadata(guildid)
 	);
 	`
@@ -77,9 +79,9 @@ func InitDB(db *sql.DB) error {
 }
 
 func RowWriter(db *sql.DB, v interface{}) error {
-	switch v.(type) {
+	switch T := v.(type) {
 	case GuildMetaRow:
-		row := v.(GuildMetaRow)
+		row := T
 		insertSQL := `INSERT INTO GuildMetadata (guildid, name, owner, textchan) VALUES (?, ?, ?, ?)`
 		_, err := db.Exec(insertSQL, row.Guildid, row.Name, row.Owner, row.Textchan)
 		if err != nil {
@@ -87,16 +89,16 @@ func RowWriter(db *sql.DB, v interface{}) error {
 		}
 		return nil
 	case CommandsTableRow:
-		row := v.(CommandsTableRow)
+		row := T
 		time := time.Now()
-		insertSQL := `INSERT INTO Commands (command, hash, last_modified, guildid) VALUES (?, ?, ?, ?)`
-		_, err := db.Exec(insertSQL, row.Command, row.Hash, time, row.Guildid)
+		insertSQL := `INSERT INTO Commands (command, hash, last_modified, guildid, desc) VALUES (?, ?, ?, ?, ?)`
+		_, err := db.Exec(insertSQL, row.Command, row.Hash, time, row.Guildid, row.Desc)
 		if err != nil {
 			return fmt.Errorf("failed to insert entry: %v", err)
 		}
 		return nil
 	case ApprovedRolesRow:
-		row := v.(ApprovedRolesRow)
+		row := T
 		insertSQL := `INSERT INTO ApprovedRoles (roleid, guildid) VALUES (?, ?)`
 		_, err := db.Exec(insertSQL, row.Roleid, row.Guildid)
 		if err != nil {
@@ -164,11 +166,9 @@ func GetCmdsDb(db *sql.DB, cmd string, guildid uint16) (*CommandsTableRow, error
 		return val.(*CommandsTableRow), nil
 	}
 
-	sqlselect := `SELECT command, hash, last_modified, guildid, created FROM Commands WHERE command = ? AND guildid = ?`
+	sqlselect := `SELECT command, hash, last_modified, guildid, desc FROM Commands WHERE command = ? AND guildid = ?`
 	var row CommandsTableRow
-	var created time.Time
-	row.Guildid = guildid
-	err := db.QueryRow(sqlselect, cmd, guildid).Scan(&row.Command, &row.Hash, &row.Last_modified, &row.Guildid, &created)
+	err := db.QueryRow(sqlselect, cmd, guildid).Scan(&row.Command, &row.Hash, &row.Last_modified, &row.Guildid, &row.Desc)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("command not found: %s", cmd)

@@ -88,6 +88,7 @@ func TestCmdsDb(t *testing.T) {
 		Hash:          hash,
 		Guildid:       guildid,
 		Last_modified: &time,
+		Desc:          "long description for test command",
 	}
 
 	// Use RowWriter to insert a new command, generate a random md5 hash for the hash field
@@ -117,6 +118,10 @@ func TestCmdsDb(t *testing.T) {
 
 	if cmds.Last_modified == nil {
 		t.Error("Expected Last_modified to be not nil")
+	}
+
+	if cmds.Desc != "long description for test command" {
+		t.Errorf("Expected desc to be %s, got %s", "long description for test command", cmds.Desc)
 	}
 }
 
