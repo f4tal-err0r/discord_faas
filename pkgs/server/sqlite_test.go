@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/binary"
-	"fmt"
 	"log"
 	"net/http"
 	"testing"
@@ -91,8 +90,6 @@ func TestCmdsDb(t *testing.T) {
 		Last_modified: &time,
 	}
 
-	fmt.Printf("%+v\n", commandRow)
-
 	// Use RowWriter to insert a new command, generate a random md5 hash for the hash field
 	err = server.RowWriter(db, commandRow)
 
@@ -131,4 +128,78 @@ func GenerateRandomUint16() uint16 {
 	}
 	num = binary.LittleEndian.Uint16(bytes)
 	return num
+}
+
+func TestGetRolebyGuildid(t *testing.T) {
+	// Create a in memory database
+	db, err := server.NewDB(&config.Config{
+		DBPath: ":memory:",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = server.InitDB(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a new guild
+	guild := server.GuildMetaRow{
+		Guildid:  GenerateRandomUint16(),
+		Owner:    "test",
+		Name:     "test",
+		Textchan: "test",
+	}
+	err = server.RowWriter(db, guild)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create multiple new roles and write to db
+	role := []server.ApprovedRolesRow{
+		{
+			Roleid:  "1",
+			Guildid: guild.Guildid,
+		},
+		{
+			Roleid:  "2",
+			Guildid: guild.Guildid,
+		},
+		{
+			Roleid:  "3",
+			Guildid: guild.Guildid,
+		},
+		{
+			Roleid:  "4",
+			Guildid: uint16(5),
+		},
+	}
+
+	for _, v := range role {
+		err = server.RowWriter(db, v)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// Call GetRolebyGuildid and check if it returns the correct roles
+	roles, err := server.GetRolebyGuildid(db, guild.Guildid)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(roles) != 3 {
+		t.Errorf("Expected 3 roles, got %d", len(roles))
+	}
+
+	if roles[0] != "1" || roles[1] != "2" || roles[2] != "3" {
+		t.Errorf("Expected roles to be 1, 2, and 3, got %v", roles)
+	}
+
+	// Check if GetRolebyGuildid returns an error if guildid is not found
+	_, err = server.GetRolebyGuildid(db, uint16(3))
+	if err == nil {
+		t.Error("Expected error, got nil")
+	}
+
 }

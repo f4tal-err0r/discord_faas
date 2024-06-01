@@ -7,20 +7,21 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/f4tal-err0r/discord_faas/pkgs/cache"
 	"github.com/f4tal-err0r/discord_faas/pkgs/config"
 	_ "github.com/mattn/go-sqlite3"
 )
 
 type GuildMetaRow struct {
-	guildid     uint64
-	name        string
-	owner       string
-	defaultchan string
+	Guildid  uint16
+	Name     string
+	Owner    string
+	Textchan string
 }
 
 type ApprovedRolesRow struct {
-	roleid  string
-	guildid uint16
+	Roleid  string
+	Guildid uint16
 }
 
 type CommandsTableRow struct {
@@ -29,6 +30,9 @@ type CommandsTableRow struct {
 	Last_modified *time.Time
 	Guildid       uint16
 }
+
+var CmdsCache = cache.New()
+var RolesCache = cache.New()
 
 func NewDB(cfg *config.Config) (*sql.DB, error) {
 	db, err := sql.Open("sqlite3", cfg.DBPath)
@@ -76,8 +80,8 @@ func RowWriter(db *sql.DB, v interface{}) error {
 	switch v.(type) {
 	case GuildMetaRow:
 		row := v.(GuildMetaRow)
-		insertSQL := `INSERT INTO GuildMetadata (guildid, name, owner, defaultchan) VALUES (?, ?, ?, ?)`
-		_, err := db.Exec(insertSQL, row.guildid, row.name, row.owner, row.defaultchan)
+		insertSQL := `INSERT INTO GuildMetadata (guildid, name, owner, textchan) VALUES (?, ?, ?, ?)`
+		_, err := db.Exec(insertSQL, row.Guildid, row.Name, row.Owner, row.Textchan)
 		if err != nil {
 			return fmt.Errorf("failed to insert entry: %v", err)
 		}
@@ -94,7 +98,7 @@ func RowWriter(db *sql.DB, v interface{}) error {
 	case ApprovedRolesRow:
 		row := v.(ApprovedRolesRow)
 		insertSQL := `INSERT INTO ApprovedRoles (roleid, guildid) VALUES (?, ?)`
-		_, err := db.Exec(insertSQL, row.roleid, row.guildid)
+		_, err := db.Exec(insertSQL, row.Roleid, row.Guildid)
 		if err != nil {
 			return fmt.Errorf("failed to insert entry: %v", err)
 		}
@@ -113,7 +117,7 @@ func InitGuildData(session *discordgo.Session, db *sql.DB) error {
 
 	for _, guild := range botGuilds {
 		var guildRow GuildMetaRow
-		err := db.QueryRow("SELECT guildid FROM GuildMetadata WHERE guildid = ?", guild.ID).Scan(&guildRow.guildid)
+		err := db.QueryRow("SELECT guildid FROM GuildMetadata WHERE guildid = ?", guild.ID).Scan(&guildRow.Guildid)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				newGuilds = append(newGuilds, guild.ID)
@@ -135,10 +139,10 @@ func InitGuildData(session *discordgo.Session, db *sql.DB) error {
 
 		guildid := StrToUint(guild.ID)
 		guildRow := GuildMetaRow{
-			guildid:     guildid,
-			name:        guild.Name,
-			owner:       guild.OwnerID,
-			defaultchan: defaultChan.ID,
+			Guildid:  guildid,
+			Name:     guild.Name,
+			Owner:    guild.OwnerID,
+			Textchan: defaultChan.ID,
 		}
 		_ = RowWriter(db, guildRow)
 	}
@@ -156,24 +160,74 @@ func UpdateCmdsDb(db *sql.DB, cmd *CommandsTableRow) {
 }
 
 func GetCmdsDb(db *sql.DB, cmd string, guildid uint16) (*CommandsTableRow, error) {
-	sqlselect := `SELECT command, hash, last_modified, guildid FROM Commands WHERE command = ? AND guildid = ?`
+	if val, ok := CmdsCache.Get(cmd); ok {
+		return val.(*CommandsTableRow), nil
+	}
+
+	sqlselect := `SELECT command, hash, last_modified, guildid, created FROM Commands WHERE command = ? AND guildid = ?`
 	var row CommandsTableRow
+	var created time.Time
 	row.Guildid = guildid
-	err := db.QueryRow(sqlselect, cmd, guildid).Scan(&row.Command, &row.Hash, &row.Last_modified, &row.Guildid)
+	err := db.QueryRow(sqlselect, cmd, guildid).Scan(&row.Command, &row.Hash, &row.Last_modified, &row.Guildid, &created)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("command not found: %s", cmd)
 		}
 		log.Fatalf("Error fetching command: %v", err)
 	}
+
+	// Add command to cache
+	CmdsCache.Set(cmd, &row, 10*time.Minute)
 	return &row, nil
 }
 
-// Remove guild row from db if bot is no longer in guild
-func RemoveGuildRow(db *sql.DB, guildid string) {
+// Remove rows from all tables by guildid
+func DeleteGuildData(db *sql.DB, guildid string) error {
 	sql := `DELETE FROM GuildMetadata WHERE guildid = ?`
 	_, err := db.Exec(sql, guildid)
 	if err != nil {
 		log.Fatalf("Error deleting guild: %v", err)
 	}
+	sql = `DELETE FROM Commands WHERE guildid = ?`
+	_, err = db.Exec(sql, guildid)
+	if err != nil {
+		log.Fatalf("Error deleting guild: %v", err)
+	}
+	sql = `DELETE FROM ApprovedRoles WHERE guildid = ?`
+	_, err = db.Exec(sql, guildid)
+	if err != nil {
+		log.Fatalf("Error deleting guild: %v", err)
+	}
+	return nil
+}
+
+// Get row from Roles table by guildid
+func GetRolebyGuildid(db *sql.DB, guildid uint16) ([]string, error) {
+	// Check Roles slice by guildid
+	if val, ok := RolesCache.Get(fmt.Sprintf("%d", guildid)); ok {
+		return val.([]string), nil
+	}
+
+	sqlselect := `SELECT roleid FROM ApprovedRoles WHERE guildid = ?`
+	rows, err := db.Query(sqlselect, guildid)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching roles: %v", err)
+	}
+	defer rows.Close()
+
+	var roles []string
+	for rows.Next() {
+		var role string
+		if err := rows.Scan(&role); err != nil {
+			return nil, fmt.Errorf("error fetching roles: %v", err)
+		}
+		roles = append(roles, role)
+	}
+
+	if len(roles) == 0 {
+		return nil, fmt.Errorf("no roles found for guildid: %d", guildid)
+	}
+
+	RolesCache.Set(fmt.Sprintf("%d", guildid), roles, 90*time.Minute)
+	return roles, nil
 }
