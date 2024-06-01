@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/bwmarrin/discordgo"
 	"github.com/f4tal-err0r/discord_faas/pkgs/config"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -19,14 +20,14 @@ type GuildMetaRow struct {
 
 type ApprovedRolesRow struct {
 	roleid  string
-	guildid uint64
+	guildid uint16
 }
 
 type CommandsTableRow struct {
-	command       string
-	hash          string
-	last_modified *time.Time
-	guildid       uint64
+	Command       string
+	Hash          string
+	Last_modified *time.Time
+	Guildid       uint16
 }
 
 func NewDB(cfg *config.Config) (*sql.DB, error) {
@@ -57,8 +58,8 @@ func InitDB(db *sql.DB) error {
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		command TEXT NOT NULL,
 		hash TEXT NOT NULL,
-		created TIMESTAMP NOT NULL,
-		last_modified TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		last_modified TIMESTAMP NOT NULL,
 		guildid INTEGER,
 		FOREIGN KEY(guildid) REFERENCES GuildMetadata(guildid)
 	);
@@ -84,8 +85,8 @@ func RowWriter(db *sql.DB, v interface{}) error {
 	case CommandsTableRow:
 		row := v.(CommandsTableRow)
 		time := time.Now()
-		insertSQL := `INSERT INTO ApprovedRoles (command, hash, last_modified, guildid) VALUES (?, ?, ?, ?)`
-		_, err := db.Exec(insertSQL, row.command, row.hash, time, row.guildid)
+		insertSQL := `INSERT INTO Commands (command, hash, last_modified, guildid) VALUES (?, ?, ?, ?)`
+		_, err := db.Exec(insertSQL, row.Command, row.Hash, time, row.Guildid)
 		if err != nil {
 			return fmt.Errorf("failed to insert entry: %v", err)
 		}
@@ -102,15 +103,8 @@ func RowWriter(db *sql.DB, v interface{}) error {
 	return fmt.Errorf("Error: Invalid type provided to Row Writer")
 }
 
-func InitGuildData(db *sql.DB) {
+func InitGuildData(session *discordgo.Session, db *sql.DB) error {
 	var newGuilds []string
-
-	cfg, err := config.New()
-	if err != nil {
-		log.Fatalf("ERR: Unable to fetch config: %v", err)
-	}
-
-	session := GetSession(cfg)
 
 	botGuilds, err := session.UserGuilds(100, "", "", false)
 	if err != nil {
@@ -129,17 +123,17 @@ func InitGuildData(db *sql.DB) {
 
 	for _, gid := range newGuilds {
 		if err != nil {
-			log.Fatalf("Error getting default channel: %v", err)
+			return fmt.Errorf("Error getting default channel: %v", err)
 		}
 
 		guild := GetGuildInfo(session, gid)
 
 		defaultChan, err := GetDefaultChannel(session, guild.ID)
 		if err != nil {
-			log.Fatalf("Error getting default channel: %v", err)
+			return fmt.Errorf("Error getting default channel: %v", err)
 		}
 
-		guildid := strToUint(guild.ID)
+		guildid := StrToUint(guild.ID)
 		guildRow := GuildMetaRow{
 			guildid:     guildid,
 			name:        guild.Name,
@@ -148,29 +142,31 @@ func InitGuildData(db *sql.DB) {
 		}
 		_ = RowWriter(db, guildRow)
 	}
+
+	return nil
 }
 
 func UpdateCmdsDb(db *sql.DB, cmd *CommandsTableRow) {
 	sql := `UPDATE Commands SET last_modified = ?, hash = ? WHERE command = ? AND guildid = ?`
 	time := time.Now()
-	_, err := db.Exec(sql, time, cmd.hash, cmd.command, cmd.guildid)
+	_, err := db.Exec(sql, time, cmd.Hash, cmd.Command, cmd.Guildid)
 	if err != nil {
 		log.Fatalf("Error editing command: %v", err)
 	}
 }
 
-func GetCmdsDb(db *sql.DB, cmd string, guildid uint64) *CommandsTableRow {
+func GetCmdsDb(db *sql.DB, cmd string, guildid uint16) (*CommandsTableRow, error) {
 	sqlselect := `SELECT command, hash, last_modified, guildid FROM Commands WHERE command = ? AND guildid = ?`
 	var row CommandsTableRow
-	row.guildid = guildid
-	err := db.QueryRow(sqlselect, cmd, guildid).Scan(&row.command, &row.hash, &row.last_modified, &row.guildid)
+	row.Guildid = guildid
+	err := db.QueryRow(sqlselect, cmd, guildid).Scan(&row.Command, &row.Hash, &row.Last_modified, &row.Guildid)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil
+			return nil, fmt.Errorf("command not found: %s", cmd)
 		}
 		log.Fatalf("Error fetching command: %v", err)
 	}
-	return &row
+	return &row, nil
 }
 
 // Remove guild row from db if bot is no longer in guild

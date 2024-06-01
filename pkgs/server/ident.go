@@ -7,22 +7,16 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/f4tal-err0r/discord_faas/pkgs/cache"
-	"github.com/f4tal-err0r/discord_faas/pkgs/config"
 )
 
 var UserGuildsCache = cache.New()
 var GuildCache = cache.New()
 
-func GetUserGuildInfo(gid string, user *discordgo.User) *discordgo.Member {
-	cfg, err := config.New()
-	if err != nil {
-		log.Fatal("ERR: Unable to fetch config: %w", err)
-	}
+func GetUserGuildInfo(session *discordgo.Session, gid string, user *discordgo.User) *discordgo.Member {
 	if v, ok := UserGuildsCache.Get(gid + user.ID); !ok {
 		return v.(*discordgo.Member)
 	}
-	botSession := GetSession(cfg)
-	member, err := botSession.GuildMember(gid, user.ID)
+	member, err := session.GuildMember(gid, user.ID)
 	if err != nil {
 		log.Fatalf("Error getting guild member: %v", err)
 	}
@@ -30,11 +24,11 @@ func GetUserGuildInfo(gid string, user *discordgo.User) *discordgo.Member {
 	return member
 }
 
-func GetGuildInfo(sess *discordgo.Session, gid string) *discordgo.Guild {
+func GetGuildInfo(session *discordgo.Session, gid string) *discordgo.Guild {
 	if v, _ := GuildCache.Get(gid); v != nil {
 		return v.(*discordgo.Guild)
 	}
-	guild, err := sess.Guild(gid)
+	guild, err := session.Guild(gid)
 	if err != nil {
 		log.Fatalf("Error getting guild: %v", err)
 	}
