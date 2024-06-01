@@ -43,3 +43,9 @@ func (c *Cache) Get(k string) (interface{}, bool) {
 		return v.value, true
 	}
 }
+
+func (c *Cache) Delete(k string) {
+	c.Lock()
+	defer c.Unlock()
+	delete(c.Data, k)
+}

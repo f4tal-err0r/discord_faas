@@ -7,13 +7,13 @@ import (
 	"strconv"
 )
 
-func StrToUint(id string) uint16 {
-	// Convert string to uint16
-	i, err := strconv.ParseUint(id, 10, 16)
+func StrToInt(id string) int64 {
+	// Convert string to int
+	i, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
-		log.Fatalf("Error converting string to uint16: %v", err)
+		log.Fatal(err)
 	}
-	return uint16(i)
+	return i
 }
 
 // GenerateRandomHash generates a random 16-character hexadecimal hash

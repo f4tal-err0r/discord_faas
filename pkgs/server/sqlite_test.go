@@ -3,7 +3,6 @@ package server_test
 import (
 	"crypto/rand"
 	"database/sql"
-	"encoding/binary"
 	"log"
 	"net/http"
 	"testing"
@@ -69,13 +68,8 @@ func TestInitDB(t *testing.T) {
 }
 
 func TestCmdsDb(t *testing.T) {
-	state, err := newState()
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	hash, err := server.GenerateRandomHash()
-	guildid := GenerateRandomUint16()
+	guildid := generateSnowflake()
 
 	if err != nil {
 		t.Fatal(err)
@@ -83,56 +77,78 @@ func TestCmdsDb(t *testing.T) {
 
 	time := time.Now()
 
-	commandRow := server.CommandsTableRow{
-		Command:       "test",
-		Hash:          hash,
-		Guildid:       guildid,
-		Last_modified: &time,
-		Desc:          "long description for test command",
+	commandRow := []server.CommandsTableRow{
+		{
+			Command:       "test",
+			Hash:          hash,
+			Last_modified: &time,
+			Guildid:       guildid,
+		},
+		{
+			Command:       "test2",
+			Hash:          hash,
+			Last_modified: &time,
+			Guildid:       guildid,
+		},
+		{
+			Command:       "test3",
+			Hash:          hash,
+			Last_modified: &time,
+			Guildid:       generateSnowflake(),
+		},
 	}
 
 	// Use RowWriter to insert a new command, generate a random md5 hash for the hash field
-	err = server.RowWriter(db, commandRow)
+
+	for _, row := range commandRow {
+		err = server.RowWriter(db, row)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Call GetCmdsDb
-	cmds, err := server.GetCmdsDb(db, "test", guildid)
+	cmds, err := server.GetCmdsDb(db, guildid)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if cmds.Command != "test" {
-		t.Errorf("Expected command to be %s, got %s", "test", cmds.Command)
+	if len(cmds) != 2 {
+		t.Fatalf("expected 2 commands, got %d", len(cmds))
 	}
 
-	if cmds.Hash != hash {
-		t.Errorf("Expected hash to be %s, got %s", hash, cmds.Hash)
+	if cmds[0].Command != "test" {
+		t.Fatalf("expected 'test', got %s", cmds[0].Command)
 	}
 
-	if cmds.Guildid != guildid {
-		t.Errorf("Expected guildid to be %v, got %v", state.Guilds[0].ID, cmds.Guildid)
+	if cmds[1].Command != "test2" {
+		t.Fatalf("expected 'test2', got %s", cmds[1].Command)
 	}
 
-	if cmds.Last_modified == nil {
-		t.Error("Expected Last_modified to be not nil")
-	}
-
-	if cmds.Desc != "long description for test command" {
-		t.Errorf("Expected desc to be %s, got %s", "long description for test command", cmds.Desc)
-	}
 }
 
-func GenerateRandomUint16() uint16 {
-	var num uint16
-	bytes := make([]byte, 8)
-	if _, err := rand.Read(bytes); err != nil {
-		return 0
+func generateSnowflake() int64 {
+	var DiscordEpoch int64 = 1420070400000
+	currentTime := time.Now().UnixNano() / int64(time.Millisecond)
+	timestamp := currentTime - DiscordEpoch
+
+	// Generate a random 10-bit machine ID and a random 12-bit sequence number
+	var randomBytes [2]byte
+	_, err := rand.Read(randomBytes[:])
+	if err != nil {
+		panic(err)
 	}
-	num = binary.LittleEndian.Uint16(bytes)
-	return num
+	machineID := int64(randomBytes[0]) & 0x03FF // Mask to 10 bits
+	sequence := int64(randomBytes[1]) & 0x0FFF  // Mask to 12 bits
+
+	// Combine the parts into a 64-bit integer
+	snowflake := (timestamp << 22) | (machineID << 12) | sequence
+
+	return snowflake
 }
 
 func TestGetRolebyGuildid(t *testing.T) {
@@ -150,10 +166,11 @@ func TestGetRolebyGuildid(t *testing.T) {
 
 	// Create a new guild
 	guild := server.GuildMetaRow{
-		Guildid:  GenerateRandomUint16(),
+		Guildid:  generateSnowflake(),
 		Owner:    "test",
 		Name:     "test",
 		Textchan: "test",
+		Source:   "local",
 	}
 	err = server.RowWriter(db, guild)
 	if err != nil {
@@ -176,7 +193,7 @@ func TestGetRolebyGuildid(t *testing.T) {
 		},
 		{
 			Roleid:  "4",
-			Guildid: uint16(5),
+			Guildid: generateSnowflake(),
 		},
 	}
 
@@ -202,7 +219,7 @@ func TestGetRolebyGuildid(t *testing.T) {
 	}
 
 	// Check if GetRolebyGuildid returns an error if guildid is not found
-	_, err = server.GetRolebyGuildid(db, uint16(3))
+	_, err = server.GetRolebyGuildid(db, int64(3))
 	if err == nil {
 		t.Error("Expected error, got nil")
 	}

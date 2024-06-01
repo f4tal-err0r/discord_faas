@@ -52,3 +52,12 @@ func TestCache_ConcurrentAccess(t *testing.T) {
 		t.Errorf("expected '%s', got '%v'", value, val)
 	}
 }
+
+func TestCache_Delete(t *testing.T) {
+	c := cache.New()
+	c.Set("foo", "bar", 5*time.Second)
+	c.Delete("foo")
+	if _, exists := c.Get("foo"); exists {
+		t.Errorf("expected 'foo' to be deleted")
+	}
+}

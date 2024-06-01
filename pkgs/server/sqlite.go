@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -13,7 +14,8 @@ import (
 )
 
 type GuildMetaRow struct {
-	Guildid  uint16
+	Guildid  int64
+	Source   string
 	Name     string
 	Owner    string
 	Textchan string
@@ -21,15 +23,16 @@ type GuildMetaRow struct {
 
 type ApprovedRolesRow struct {
 	Roleid  string
-	Guildid uint16
+	Guildid int64
 }
 
 type CommandsTableRow struct {
 	Command       string
 	Hash          string
 	Last_modified *time.Time
-	Guildid       uint16
+	Guildid       int64
 	Desc          string
+	Runtime       string
 }
 
 var CmdsCache = cache.New()
@@ -47,6 +50,7 @@ func InitDB(db *sql.DB) error {
 	CreateTablesDb := `
 	CREATE TABLE IF NOT EXISTS GuildMetadata (
 		guildid INTEGER PRIMARY KEY,
+		source TEXT NOT NULL,
 		name TEXT NOT NULL,
 		owner TEXT NOT NULL,
 		textchan TEXT NOT NULL
@@ -55,7 +59,7 @@ func InitDB(db *sql.DB) error {
 	CREATE TABLE IF NOT EXISTS ApprovedRoles (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		roleid TEXT NOT NULL,
-		guildid INTEGER,
+		guildid INTEGER NOT NULL,
 		FOREIGN KEY(guildid) REFERENCES GuildMetadata(guildid)
 	);
 	
@@ -65,8 +69,9 @@ func InitDB(db *sql.DB) error {
 		hash TEXT NOT NULL,
 		created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 		last_modified TIMESTAMP NOT NULL,
-		guildid INTEGER,
+		guildid INTEGER NOT NULL,
 		desc TEXT,
+		runtime TEXT NOT NULL,
 		FOREIGN KEY(guildid) REFERENCES GuildMetadata(guildid)
 	);
 	`
@@ -82,8 +87,8 @@ func RowWriter(db *sql.DB, v interface{}) error {
 	switch T := v.(type) {
 	case GuildMetaRow:
 		row := T
-		insertSQL := `INSERT INTO GuildMetadata (guildid, name, owner, textchan) VALUES (?, ?, ?, ?)`
-		_, err := db.Exec(insertSQL, row.Guildid, row.Name, row.Owner, row.Textchan)
+		insertSQL := `INSERT INTO GuildMetadata (guildid, source, name, owner, textchan) VALUES (?, ?, ?, ?, ?)`
+		_, err := db.Exec(insertSQL, row.Guildid, row.Source, row.Name, row.Owner, row.Textchan)
 		if err != nil {
 			return fmt.Errorf("failed to insert entry: %v", err)
 		}
@@ -91,8 +96,8 @@ func RowWriter(db *sql.DB, v interface{}) error {
 	case CommandsTableRow:
 		row := T
 		time := time.Now()
-		insertSQL := `INSERT INTO Commands (command, hash, last_modified, guildid, desc) VALUES (?, ?, ?, ?, ?)`
-		_, err := db.Exec(insertSQL, row.Command, row.Hash, time, row.Guildid, row.Desc)
+		insertSQL := `INSERT INTO Commands (command, hash, last_modified, guildid, desc, runtime) VALUES (?, ?, ?, ?, ?, ?)`
+		_, err := db.Exec(insertSQL, row.Command, row.Hash, time, row.Guildid, row.Desc, row.Runtime)
 		if err != nil {
 			return fmt.Errorf("failed to insert entry: %v", err)
 		}
@@ -139,7 +144,10 @@ func InitGuildData(session *discordgo.Session, db *sql.DB) error {
 			return fmt.Errorf("Error getting default channel: %v", err)
 		}
 
-		guildid := StrToUint(guild.ID)
+		guildid, err := strconv.ParseInt(guild.ID, 10, 64)
+		if err != nil {
+			return fmt.Errorf("Error converting guildid: %v", err)
+		}
 		guildRow := GuildMetaRow{
 			Guildid:  guildid,
 			Name:     guild.Name,
@@ -161,48 +169,59 @@ func UpdateCmdsDb(db *sql.DB, cmd *CommandsTableRow) {
 	}
 }
 
-func GetCmdsDb(db *sql.DB, cmd string, guildid uint16) (*CommandsTableRow, error) {
-	if val, ok := CmdsCache.Get(cmd); ok {
-		return val.(*CommandsTableRow), nil
+func GetCmdsDb(db *sql.DB, guildid int64) ([]*CommandsTableRow, error) {
+	// Check cache by guildid
+	if cmds, ok := CmdsCache.Get(fmt.Sprintf("%d", guildid)); ok {
+		return cmds.([]*CommandsTableRow), nil
 	}
 
-	sqlselect := `SELECT command, hash, last_modified, guildid, desc FROM Commands WHERE command = ? AND guildid = ?`
-	var row CommandsTableRow
-	err := db.QueryRow(sqlselect, cmd, guildid).Scan(&row.Command, &row.Hash, &row.Last_modified, &row.Guildid, &row.Desc)
+	sqlselect := `SELECT command, hash, last_modified, guildid, desc, runtime FROM Commands WHERE guildid = ?`
+	rows, err := db.Query(sqlselect, guildid)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("command not found: %s", cmd)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var cmds []*CommandsTableRow
+	for rows.Next() {
+		cmd := &CommandsTableRow{}
+		if err := rows.Scan(&cmd.Command, &cmd.Hash, &cmd.Last_modified, &cmd.Guildid, &cmd.Desc, &cmd.Runtime); err != nil {
+			return nil, err
 		}
-		log.Fatalf("Error fetching command: %v", err)
+		cmds = append(cmds, cmd)
 	}
 
-	// Add command to cache
-	CmdsCache.Set(cmd, &row, 10*time.Minute)
-	return &row, nil
+	CmdsCache.Set(fmt.Sprintf("%d", guildid), cmds, 45*time.Minute)
+
+	return cmds, nil
 }
 
 // Remove rows from all tables by guildid
 func DeleteGuildData(db *sql.DB, guildid string) error {
-	sql := `DELETE FROM GuildMetadata WHERE guildid = ?`
-	_, err := db.Exec(sql, guildid)
+	tx, err := db.Begin()
 	if err != nil {
-		log.Fatalf("Error deleting guild: %v", err)
+		return err
 	}
-	sql = `DELETE FROM Commands WHERE guildid = ?`
-	_, err = db.Exec(sql, guildid)
+	defer tx.Rollback()
+
+	_, err = tx.Exec("DELETE FROM GuildMetadata WHERE guildid = ?", guildid)
 	if err != nil {
-		log.Fatalf("Error deleting guild: %v", err)
+		return err
 	}
-	sql = `DELETE FROM ApprovedRoles WHERE guildid = ?`
-	_, err = db.Exec(sql, guildid)
+	_, err = tx.Exec("DELETE FROM Commands WHERE guildid = ?", guildid)
 	if err != nil {
-		log.Fatalf("Error deleting guild: %v", err)
+		return err
 	}
-	return nil
+	_, err = tx.Exec("DELETE FROM ApprovedRoles WHERE guildid = ?", guildid)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 // Get row from Roles table by guildid
-func GetRolebyGuildid(db *sql.DB, guildid uint16) ([]string, error) {
+func GetRolebyGuildid(db *sql.DB, guildid int64) ([]string, error) {
 	// Check Roles slice by guildid
 	if val, ok := RolesCache.Get(fmt.Sprintf("%d", guildid)); ok {
 		return val.([]string), nil
