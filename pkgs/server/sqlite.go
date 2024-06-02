@@ -37,6 +37,7 @@ type CommandsTableRow struct {
 
 var CmdsCache = cache.New()
 var RolesCache = cache.New()
+var GuildMetaCache = cache.New()
 
 func NewDB(cfg *config.Config) (*sql.DB, error) {
 	db, err := sql.Open("sqlite3", cfg.DBPath)
@@ -252,4 +253,36 @@ func GetRolebyGuildid(db *sql.DB, guildid int64) ([]string, error) {
 
 	RolesCache.Set(fmt.Sprintf("%d", guildid), roles, 90*time.Minute)
 	return roles, nil
+}
+
+// Add row to Roles table
+func AddRole(db *sql.DB, guildid int64, roleid string) error {
+	sql := `INSERT INTO ApprovedRoles (guildid, roleid) VALUES (?, ?)`
+	_, err := db.Exec(sql, guildid, roleid)
+	if err != nil {
+		return fmt.Errorf("Error adding role: %v", err)
+	}
+
+	log.Printf("Added role %s to guild %d", roleid, guildid)
+	return nil
+}
+
+// Lookup guild from guildid
+func LookupGuild(db *sql.DB, guildid int64) (*GuildMetaRow, error) {
+	// Check GuildMetaCache by guildid
+	if val, ok := GuildMetaCache.Get(fmt.Sprintf("%d", guildid)); ok {
+		return val.(*GuildMetaRow), nil
+	}
+	sqlselect := `SELECT guildid, source, name, owner, textchan FROM GuildMetadata WHERE guildid = ?`
+	row := db.QueryRow(sqlselect, guildid)
+	guild := &GuildMetaRow{}
+	if err := row.Scan(&guild.Guildid, &guild.Source, &guild.Name, &guild.Owner, &guild.Textchan); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	GuildMetaCache.Set(fmt.Sprintf("%d", guildid), guild, 45*time.Minute)
+	return guild, nil
 }
