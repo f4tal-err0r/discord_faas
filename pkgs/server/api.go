@@ -60,7 +60,6 @@ func ContextHandler(w http.ResponseWriter, r *http.Request) {
 	guildID := r.Header.Get("X-Discord-GuildId")
 	guild, err := GetGuildInfo(GetSession(cfg), guildID)
 	if err != nil {
-		//If error contains 404, it means the guild was not found
 		if strings.Contains(err.Error(), "404") {
 			http.Error(w, "Guild not found", http.StatusNotFound)
 			return

@@ -14,7 +14,10 @@ type ContextResp struct {
 	GuildID        string `json:"guild_id"`
 	GuildName      string `json:"guild_name"`
 	CurrentContext bool
+	//TODO: *JWTToken
 }
+
+//TODO: Serialize future JWT token to server here, verifying ident w/ Oauth token
 
 func NewContext(url string, guildid string) *ContextResp {
 	// Create a request to the endpoint
