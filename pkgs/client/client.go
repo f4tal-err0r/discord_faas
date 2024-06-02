@@ -26,7 +26,7 @@ func getCurrentUser() *discordgo.User {
 	return user
 }
 
-func FetchCache(name string) string {
+func FetchCacheDir(name string) string {
 	cache, err := os.UserCacheDir()
 	if err != nil {
 		log.Fatalf("Unable to fetch cache directory: %v", err)

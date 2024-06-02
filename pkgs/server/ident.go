@@ -1,39 +1,73 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
-	"log"
+	"net/http"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/f4tal-err0r/discord_faas/pkgs/cache"
 )
 
-var UserGuildsCache = cache.New()
-var GuildCache = cache.New()
-
-func GetUserGuildInfo(session *discordgo.Session, gid string, user *discordgo.User) *discordgo.Member {
-	if v, ok := UserGuildsCache.Get(gid + user.ID); !ok {
-		return v.(*discordgo.Member)
-	}
-	member, err := session.GuildMember(gid, user.ID)
-	if err != nil {
-		log.Fatalf("Error getting guild member: %v", err)
-	}
-	UserGuildsCache.Set((gid + user.ID), member, (4 * time.Hour))
-	return member
+type OAuth2Response struct {
+	ID            string `json:"id"`
+	Username      string `json:"username"`
+	Discriminator string `json:"discriminator"`
+	Avatar        string `json:"avatar"`
 }
 
-func GetGuildInfo(session *discordgo.Session, gid string) *discordgo.Guild {
+type GuildMember struct {
+	User         OAuth2Response `json:"user"`
+	Nickname     string         `json:"nick"`
+	Roles        []string       `json:"roles"`
+	JoinedAt     string         `json:"joined_at"`
+	PremiumSince string         `json:"premium_since"`
+	Deaf         bool           `json:"deaf"`
+	Mute         bool           `json:"mute"`
+}
+
+var GuildCache = cache.New()
+var GuildMemberCache = cache.New()
+
+func FetchGuildMember(token, gid string) (*GuildMember, error) {
+	endpoint := fmt.Sprintf("https://discord.com/api/users/@me/guilds/%s/member", gid)
+
+	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+
+	client := http.DefaultClient
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to fetch guild member: %s", resp.Status)
+	}
+
+	var member GuildMember
+	if err := json.NewDecoder(resp.Body).Decode(&member); err != nil {
+		return nil, err
+	}
+
+	return &member, nil
+}
+
+func GetGuildInfo(session *discordgo.Session, gid string) (*discordgo.Guild, error) {
 	if v, _ := GuildCache.Get(gid); v != nil {
-		return v.(*discordgo.Guild)
+		return v.(*discordgo.Guild), nil
 	}
 	guild, err := session.Guild(gid)
 	if err != nil {
-		log.Fatalf("Error getting guild: %v", err)
+		return nil, err
 	}
 	GuildCache.Set(gid, guild, (4 * time.Hour))
-	return guild
+	return guild, nil
 }
 
 func GetDefaultChannel(session *discordgo.Session, guildID string) (*discordgo.Channel, error) {

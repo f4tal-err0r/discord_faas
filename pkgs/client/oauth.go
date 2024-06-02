@@ -24,10 +24,10 @@ var (
 )
 
 func init() {
-	cachefp = FetchCache("token")
+	cachefp = FetchCacheDir("token")
 	oauthCfg = &oauth2.Config{
-		// ClientID:    cfg.Oauth.ClientID,
-		RedirectURL: "http://localhost:8080/callback",
+		ClientID:    "1244042576579792937",
+		RedirectURL: "http://localhost:8085/callback",
 		Scopes:      []string{"guilds", "guilds.members.read", "identify"},
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  "https://discord.com/oauth2/authorize",
@@ -70,7 +70,7 @@ func StartAuth() (*oauth2.Token, error) {
 	browser.OpenURL(url)
 
 	go func() {
-		log.Fatal(http.ListenAndServe(":8080", nil))
+		log.Fatal(http.ListenAndServe(":8085", nil))
 	}()
 
 	token := <-tokenChan

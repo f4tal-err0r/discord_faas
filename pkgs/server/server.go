@@ -1,6 +1,7 @@
 package server
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"os"
@@ -9,6 +10,9 @@ import (
 
 	"github.com/f4tal-err0r/discord_faas/pkgs/config"
 )
+
+var cfg *config.Config
+var db *sql.DB
 
 func Start() {
 	cfg, err := config.New()
@@ -30,7 +34,9 @@ func Start() {
 		log.Print("Bot Shutdown.")
 	}()
 
-	select {}
+	// start api server
+	srv := NewServer()
+	log.Fatal(srv.ListenAndServe())
 }
 
 func createDirIfNotExist(dirPath string) error {
