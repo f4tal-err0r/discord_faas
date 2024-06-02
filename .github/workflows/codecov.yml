@@ -1,6 +1,6 @@
 name: Codecov
 uses: codecov/codecov-action@v4.4.1
-  with:
+with:
     # Repository Codecov token. Used to authorize report uploads
     token: # optional
     # Specify the path to the Codecov YML
