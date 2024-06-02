@@ -40,6 +40,8 @@ func APIPatchAuth(w http.ResponseWriter, r *http.Request) bool {
 		return false
 	}
 
+	//TODO: This needs to also check GetRolesByGuildID to see if the user has the correct role
+
 	return true
 }
 
