@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/spf13/viper"
 )
@@ -11,6 +12,7 @@ type Config struct {
 	Domain    string  `mapstructure:"DOMAIN"`
 	Filestore string  `mapstructure:"FILESTORE"`
 	DBPath    string  `mapstructure:"DBPATH"`
+	Cachepath string  `mapstructure:"CACHEPATH"`
 }
 
 type Discord struct {
@@ -26,6 +28,11 @@ func New() (*Config, error) {
 	viper.AddConfigPath(".")
 
 	viper.SetDefault("filestore", "/opt/dfaas")
+	cpath, err := os.UserCacheDir()
+	if err != nil {
+		return nil, fmt.Errorf("Unable to resolve CacheDir: %s.")
+	}
+	viper.SetDefault("cachepath", cpath)
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {

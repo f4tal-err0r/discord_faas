@@ -72,6 +72,7 @@ func ContextHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// TODO: ctx in the future should return a JWT
 	ctx := struct {
 		ClientID  string `json:"client_id"`
 		GuildID   string `json:"guild_id"`
