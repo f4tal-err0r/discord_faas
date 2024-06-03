@@ -156,10 +156,6 @@ func ListContexts() {
 
 	_, err = fzf.Find(ContextList, func(i int) string {
 		SwitchContext(ContextList, ContextList[i].GuildID)
-		cr := GetCurrentContext()
-		if cr == nil {
-			log.Fatalf("failed to get current context")
-		}
 		return ContextList[i].GuildName
 	},
 	)
