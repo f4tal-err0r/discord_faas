@@ -30,7 +30,7 @@ func New() (*Config, error) {
 	viper.SetDefault("filestore", "/opt/dfaas")
 	cpath, err := os.UserCacheDir()
 	if err != nil {
-		return nil, fmt.Errorf("Unable to resolve CacheDir: %s.")
+		return nil, fmt.Errorf("Unable to resolve CacheDir: %s.", err)
 	}
 	viper.SetDefault("cachepath", cpath)
 
