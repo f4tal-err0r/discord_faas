@@ -268,7 +268,7 @@ func AddRole(db *sql.DB, guildid int64, roleid string) error {
 }
 
 // Lookup guild from guildid
-func LookupGuild(db *sql.DB, guildid int64) (*GuildMetaRow, error) {
+func LookupGuildbyId(db *sql.DB, guildid int64) (*GuildMetaRow, error) {
 	// Check GuildMetaCache by guildid
 	if val, ok := GuildMetaCache.Get(fmt.Sprintf("%d", guildid)); ok {
 		return val.(*GuildMetaRow), nil

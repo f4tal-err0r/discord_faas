@@ -16,11 +16,17 @@ help:
 ## test: run all tests
 .PHONY: test
 test:
-	go test -v -race -buildvcs $(shell go list ./... | grep -v 'runtime/')
+	go test -v -race -buildvcs $(shell go list ./... | grep -v 'runtime/') 
 
 fmt:
 	@gofmt -l -w $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 
+lint:
+	golangci-lint run
+	
+## Run all tests except TestContext
+test/github:
+	go test -v -race -buildvcs $(shell go list ./... | grep -v 'runtime/')  -run "${GITHUB_TEST_PATTERN}"
 
 ## test/cover: run all tests and display coverage
 .PHONY: test/cover

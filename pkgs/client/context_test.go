@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// This only works locally with a valid oauth token
 func TestContext(t *testing.T) {
 	// create a rest server
 	router := mux.NewRouter()
