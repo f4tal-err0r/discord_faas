@@ -1,7 +1,7 @@
 # Change these variables as necessary.
 MAIN_PACKAGE_PATH := ./cmd/
 BINARY_NAME := dfaas
-
+EXCLUDE_TEST := "TestContext"
 
 # ==================================================================================== #
 # HELPERS
@@ -24,9 +24,6 @@ fmt:
 lint:
 	golangci-lint run
 	
-## Run all tests except TestContext
-test/github:
-	go test -v -race -buildvcs $(shell go list ./... | grep -v 'runtime/')  -run "${GITHUB_TEST_PATTERN}"
 
 ## test/cover: run all tests and display coverage
 .PHONY: test/cover
