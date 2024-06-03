@@ -7,6 +7,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+
+	fzf "github.com/ktr0731/go-fuzzyfinder"
 )
 
 type ContextResp struct {
@@ -31,6 +33,7 @@ func NewContext(url string, guildid string) *ContextResp {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	req.Header.Set("X-Discord-Oauth", oauth)
 	req.Header.Set("X-Discord-GuildId", guildid)
 	resp, err := http.DefaultClient.Do(req)
@@ -143,15 +146,28 @@ func GetCurrentContext() *ContextResp {
 func ListContexts() {
 	ContextList, err := LoadContextList()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("failed to load context list: %v", err)
 	}
+
 	if len(ContextList) == 0 {
 		fmt.Println("No context found")
+		return
 	}
-	for _, ctx := range ContextList {
-		fmt.Println(ctx)
+
+	_, err = fzf.Find(ContextList, func(i int) string {
+		SwitchContext(ContextList, ContextList[i].GuildID)
+		cr := GetCurrentContext()
+		if cr == nil {
+			log.Fatalf("failed to get current context")
+		}
+		return ContextList[i].GuildName
+	},
+	)
+	if err != nil {
+		log.Fatalf("failed to select context: %v", err)
 	}
 }
+
 func createFileIfNotExists(filePath string) (*os.File, error) {
 	// os.O_CREATE creates the file if it does not exist
 	// os.O_EXCL returns an error if the file already exists
