@@ -28,7 +28,7 @@ lint:
 ## test/cover: run all tests and display coverage
 .PHONY: test/cover
 test/cover:
-	go test -v -race -buildvcs -coverprofile=/tmp/coverage.out $(go list ./... | grep -v 'runtime/')
+	go test -v -race -buildvcs -coverprofile=/tmp/coverage.out $(shell go list ./... | grep -v 'runtime/')
 	go tool cover -html=/tmp/coverage.out
 
 ## build: build the application

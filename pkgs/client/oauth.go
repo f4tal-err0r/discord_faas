@@ -23,10 +23,11 @@ var (
 	cachefp      string
 )
 
-func init() {
+func initOauth() {
 	cachefp = FetchCacheDir("token")
+	context := GetCurrentContext()
 	oauthCfg = &oauth2.Config{
-		ClientID:    "1244042576579792937",
+		ClientID:    context.ClientID,
 		RedirectURL: "http://localhost:8085/callback",
 		Scopes:      []string{"guilds", "guilds.members.read", "identify"},
 		Endpoint: oauth2.Endpoint{
@@ -34,7 +35,7 @@ func init() {
 			TokenURL: "https://discord.com/api/oauth2/token",
 		},
 	}
-	state = "VIgSXcWvBgLtHt4T9MVPg0jr" // you should generate this randomly
+	state = "VIgSXcWvBgLtHt4T9MVPg0jr" //TODO: Generate and store elsewhere
 	codeVerifier = generateCodeVerifier()
 	tokenChan = make(chan *oauth2.Token)
 }
@@ -55,6 +56,7 @@ func generateCodeChallenge(codeVerifier string) (string, error) {
 }
 
 func StartAuth() (*oauth2.Token, error) {
+	initOauth()
 	http.HandleFunc("/callback", handleCallback)
 
 	codeChallenge, err := generateCodeChallenge(codeVerifier)

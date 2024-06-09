@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/f4tal-err0r/discord_faas/pkgs/client"
 	"github.com/spf13/cobra"
 )
@@ -12,11 +14,11 @@ func init() {
 	rootCmd.AddCommand(context)
 	context.AddCommand(newContext)
 	context.AddCommand(listContexts)
+	context.AddCommand(currentContext)
 	newContext.Flags().StringVarP(&guildid, "guildid", "", "", "GuildID of server")
 	newContext.MarkFlagRequired("guildid")
 	newContext.Flags().StringVarP(&url, "url", "", "", "GuildID of server")
 	newContext.MarkFlagRequired("url")
-
 }
 
 var context = &cobra.Command{
@@ -38,5 +40,13 @@ var listContexts = &cobra.Command{
 	Short: "List available contexts",
 	Run: func(cmd *cobra.Command, args []string) {
 		client.ListContexts()
+	},
+}
+
+var currentContext = &cobra.Command{
+	Use:   "current",
+	Short: "Show Current Context",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Printf("Current Server Context: %v", client.GetCurrentContext().GuildName)
 	},
 }

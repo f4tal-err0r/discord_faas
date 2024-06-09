@@ -89,3 +89,19 @@ func ContextHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
+
+func DeployHandler(w http.ResponseWriter, r *http.Request) {
+	if !APIPatchAuth(w, r) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Recieve a file from the request
+	file, _, err := r.FormFile("file")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer file.Close()
+
+}

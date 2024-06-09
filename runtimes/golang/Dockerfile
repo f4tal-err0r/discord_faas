@@ -1,1 +1,0 @@
-## TODO: Dockerfile for Golang runtime

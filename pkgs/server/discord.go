@@ -39,6 +39,7 @@ func RegisterCommands(db *sql.DB, session *discordgo.Session) error {
 			commands = append(commands, discordgo.ApplicationCommand{
 				Name:        cmd.Command,
 				Description: cmd.Desc,
+				//TODO: Add options
 			})
 		}
 		for _, cmd := range commands {

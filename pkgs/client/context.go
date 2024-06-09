@@ -93,6 +93,11 @@ func SerializeContextList(ctxl []*ContextResp) error {
 	}
 	defer file.Close()
 
+	// If error returns EOF, return empty list
+	if err == io.EOF {
+		return nil
+	}
+
 	return json.NewEncoder(file).Encode(ctxl)
 }
 

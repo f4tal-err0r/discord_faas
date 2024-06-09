@@ -1,13 +1,12 @@
 package client_test
 
-// import (
-// 	"net/http"
-// 	"net/http/httptest"
-// 	"testing"
+import (
+	"io"
+	"os"
+	"testing"
 
-// 	"github.com/f4tal-err0r/discord_faas/pkgs/client"
-// 	"github.com/gorilla/mux"
-// )
+	"github.com/f4tal-err0r/discord_faas/pkgs/client"
+)
 
 // This only works locally with a valid oauth token
 // func TestContext(t *testing.T) {
@@ -31,3 +30,54 @@ package client_test
 // 		t.Errorf("Unexpected guild ID: %s", ctx.GuildID)
 // 	}
 // }
+
+func TestSerializeContextList(t *testing.T) {
+	// Test case: Empty context list
+	ctxList := []*client.ContextResp{}
+	err := client.SerializeContextList(ctxList)
+	if err != nil {
+		t.Errorf("Expected no error for empty context list, got %v", err)
+	}
+
+	// Test case: Non-empty context list
+	ctxList = []*client.ContextResp{
+		{
+			ClientID:  "client1",
+			GuildID:   "guild1",
+			GuildName: "Guild 1",
+		},
+		{
+			ClientID:  "client2",
+			GuildID:   "guild2",
+			GuildName: "Guild 2",
+		},
+	}
+	expected := `[{"ClientID":"client1","GuildID":"guild1","GuildName":"Guild 1"},{"ClientID":"client2","GuildID":"guild2","GuildName":"Guild 2"}]`
+	err = client.SerializeContextList(ctxList)
+	if err != nil {
+		t.Errorf("Expected no error for non-empty context list, got %v", err)
+	}
+	file, err := os.Open(client.FetchCacheDir("context"))
+	if err != nil {
+		t.Errorf("Failed to open cache file: %v", err)
+	}
+	defer file.Close()
+	actual, err := io.ReadAll(file)
+	if err != nil {
+		t.Errorf("Failed to read cache file: %v", err)
+	}
+	if string(actual) != expected {
+		t.Errorf("Expected serialized context list %s, got %s", expected, string(actual))
+	}
+}
+
+func TestLoadContextList(t *testing.T) {
+	// Test case: Empty context list
+	ctxList, err := client.LoadContextList()
+	if err != nil {
+		t.Errorf("Expected no error for empty context list, got %v", err)
+	}
+	if len(ctxList) != 0 {
+		t.Errorf("Expected empty context list, got %v", ctxList)
+	}
+}

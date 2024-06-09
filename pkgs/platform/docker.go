@@ -1,0 +1,72 @@
+package platform
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"time"
+
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/image"
+	docker "github.com/docker/docker/client"
+)
+
+type Docker struct {
+	*docker.Client
+}
+
+func NewDockerClient() (*Docker, error) {
+	opts := []docker.Opt{
+		docker.FromEnv,
+		docker.WithAPIVersionNegotiation(),
+	}
+
+	client, err := docker.NewClientWithOpts(opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Docker{client}, nil
+}
+
+func (d *Docker) BuildImage(dockerfile *os.File, labels *Labels) (*Image, error) {
+	buildResp, err := d.ImageBuild(context.Background(), dockerfile, types.ImageBuildOptions{
+		Labels: map[string]string{
+			"runtime":   "discord-faas",
+			"guildid":   labels.GuildID,
+			"ownerid":   labels.OwnerID,
+			"userid":    labels.UserID,
+			"timestamp": fmt.Sprintf("%d", labels.Timestamp.Unix()),
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &Image{
+		Meta: labels,
+	}, nil
+}
+func (d *Docker) ListImages() ([]*Image, error) {
+	var images []*Image
+	dockerimgs, err := d.ImageList(context.Background(), image.ListOptions{All: true})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, v := range dockerimgs {
+		images = append(images, &Image{
+			Name:    v.RepoTags[0],
+			Runtime: v.Labels["runtime"],
+			Hash:    v.ID,
+			Meta: &Labels{
+				GuildID:   v.Labels["guildid"],
+				OwnerID:   v.Labels["ownerid"],
+				UserID:    v.Labels["userid"],
+				Timestamp: time.Unix(v.Created, 0),
+			},
+		})
+	}
+
+	return images, nil
+}

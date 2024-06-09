@@ -8,11 +8,10 @@ import (
 )
 
 type Config struct {
-	Discord   Discord `mapstructure:"DISCORD"`
-	Domain    string  `mapstructure:"DOMAIN"`
-	Filestore string  `mapstructure:"FILESTORE"`
-	DBPath    string  `mapstructure:"DBPATH"`
-	Cachepath string  `mapstructure:"CACHEPATH"`
+	Discord     Discord `mapstructure:"DISCORD"`
+	Filestore   string  `mapstructure:"FILESTORE"`
+	DBPath      string  `mapstructure:"DBPATH"`
+	RuntimeRepo string  `mapstructure:"RUNTIMEREPO"`
 }
 
 type Discord struct {
@@ -21,13 +20,20 @@ type Discord struct {
 }
 
 func New() (*Config, error) {
+	return NewPathConfig("")
+}
+
+func NewPathConfig(path string) (*Config, error) {
 	var cfg Config
 
-	viper.SetConfigName("config")
-	viper.SetConfigType("yaml")
-	viper.AddConfigPath(".")
+	if path == "" {
+		path = "config.yaml"
+	}
+
+	viper.SetConfigFile(path)
 
 	viper.SetDefault("filestore", "/opt/dfaas")
+	viper.SetDefault("runtimerepo", "github.com/f4tal-err0r/discord_faas/runtimes/")
 	cpath, err := os.UserCacheDir()
 	if err != nil {
 		return nil, fmt.Errorf("Unable to resolve CacheDir: %s.", err)
