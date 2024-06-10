@@ -1,3 +1,5 @@
+//go:build !exclude_tests
+
 package client_test
 
 import (

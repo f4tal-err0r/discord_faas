@@ -29,23 +29,20 @@ func NewDockerClient() (*Docker, error) {
 	return &Docker{client}, nil
 }
 
-func (d *Docker) BuildImage(dockerfile *os.File, labels *Labels) (*Image, error) {
-	buildResp, err := d.ImageBuild(context.Background(), dockerfile, types.ImageBuildOptions{
+func (d *Docker) BuildImage(dockerfile *os.File, img *Image) error {
+	_, err := d.ImageBuild(context.Background(), dockerfile, types.ImageBuildOptions{
+		Tags: []string{img.Name},
 		Labels: map[string]string{
-			"runtime":   "discord-faas",
-			"guildid":   labels.GuildID,
-			"ownerid":   labels.OwnerID,
-			"userid":    labels.UserID,
-			"timestamp": fmt.Sprintf("%d", labels.Timestamp.Unix()),
+			"guildid":   img.Meta.GuildID,
+			"ownerid":   img.Meta.OwnerID,
+			"userid":    img.Meta.UserID,
+			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
 		},
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
-
-	return &Image{
-		Meta: labels,
-	}, nil
+	return nil
 }
 func (d *Docker) ListImages() ([]*Image, error) {
 	var images []*Image

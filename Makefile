@@ -18,6 +18,11 @@ help:
 test:
 	go test -v -race -buildvcs $(shell go list ./... | grep -v 'runtime/') 
 
+## local/test: Exclude tests which can break local environment (like context)
+.PHONY: local/test
+local/test:
+	go test -v -race -buildvcs -tags exclude $(shell go list ./... | grep -v 'runtime/') 
+
 fmt:
 	@gofmt -l -w $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 
