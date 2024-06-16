@@ -15,7 +15,7 @@ help:
 
 ## test: run all tests
 .PHONY: test
-test:
+test: protobuf
 	go test -v -race -buildvcs $(shell go list ./... | grep -v 'runtime/') 
 
 ## local/test: Exclude tests which can break local environment (like context)
@@ -32,7 +32,7 @@ lint:
 
 ## test/cover: run all tests and display coverage
 .PHONY: test/cover
-test/cover:
+test/cover: protobuf
 	go test -v -race -buildvcs -coverprofile=/tmp/coverage.out $(shell go list ./... | grep -v 'runtime/')
 	go tool cover -html=/tmp/coverage.out
 

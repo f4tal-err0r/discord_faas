@@ -12,7 +12,7 @@ import (
 	"github.com/gorilla/websocket"
 	"google.golang.org/protobuf/proto"
 
-	pb "github.com/f4tal-err0r/discord_faas/pkgs/proto"
+	pb "github.com/f4tal-err0r/discord_faas/proto"
 
 	"github.com/f4tal-err0r/discord_faas/pkgs/config"
 )
@@ -124,7 +124,7 @@ func DeployHandler(conn *websocket.Conn, r *http.Request) {
 	_ = bytes.NewReader(p)
 }
 
-func unmarshalRequest(r *http.Request) (*pb.DeployFunc, error) {
+func unmarshalRequest(r *http.Request) (*pb.Wrapper, error) {
 	wrapper := new(pb.Wrapper)
 
 	data, err := io.ReadAll(r.Body)
@@ -135,5 +135,5 @@ func unmarshalRequest(r *http.Request) (*pb.DeployFunc, error) {
 		return nil, fmt.Errorf("invalid request: %w", err)
 	}
 
-	return wrapper.GetDeployFunc(), nil
+	return wrapper, nil
 }

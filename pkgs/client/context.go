@@ -27,7 +27,7 @@ func NewContext(url string, guildid string) *pb.ContextResp {
 		log.Fatal(err)
 	}
 
-	contextRequest := pb.Context{
+	contextRequest := pb.GetContext{
 		GuildID: guildid,
 		Token:   oauth,
 	}
