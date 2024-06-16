@@ -11,6 +11,7 @@ import (
 
 	pb "github.com/f4tal-err0r/discord_faas/proto"
 	fzf "github.com/ktr0731/go-fuzzyfinder"
+	"google.golang.org/protobuf/proto"
 )
 
 //TODO: Serialize future JWT token to server here, verifying ident w/ Oauth token
@@ -33,12 +34,16 @@ func NewContext(url string, guildid string) *pb.ContextResp {
 	}
 
 	// Send protobuf request to server
-	req.Header.Set("Content-Type", "application/json")
-	jsonBody, err := json.Marshal(&contextRequest)
+
+	msgBody, err := proto.Marshal(&contextRequest)
 	if err != nil {
 		log.Fatal(err)
 	}
-	req.Body = io.NopCloser(bytes.NewBuffer(jsonBody))
+
+	//write msgBody to req.Body as protobuf bytes
+	req.Body = io.NopCloser(bytes.NewReader(msgBody))
+	req.Header.Set("Content-Type", "application/x-protobuf")
+
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Fatal(err)

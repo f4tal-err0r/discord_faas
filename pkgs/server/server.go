@@ -37,7 +37,7 @@ func Start() {
 
 	// start api server
 	router := Router()
-	log.Fatal(http.ListenAndServe(":8080", router))
+	log.Fatal(http.ListenAndServe(":8085", router))
 }
 
 func createDirIfNotExist(dirPath string) error {
