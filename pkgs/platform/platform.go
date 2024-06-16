@@ -15,8 +15,8 @@ import (
 
 // We want to support possible future container types
 type Platform interface {
-	BuildImage(file *os.File, labels *Labels) error
-	Exec() error
+	BuildImage(file *os.File, img *Image) error
+	Exec(hash string) error
 	ListImages() ([]*Image, error)
 	RemoveImage(name string) error
 	Rollback(hash string) error
@@ -24,17 +24,17 @@ type Platform interface {
 }
 
 type Image struct {
-	Name    string
-	Runtime string
-	Hash    string
-	Meta    *Labels
+	Name      string
+	Runtime   string
+	Hash      string
+	Meta      *Labels
+	Timestamp time.Time
 }
 
 type Labels struct {
-	GuildID   string
-	OwnerID   string
-	UserID    string
-	Timestamp time.Time
+	GuildID string
+	OwnerID string
+	UserID  string
 }
 
 //go:embed runtimes/*

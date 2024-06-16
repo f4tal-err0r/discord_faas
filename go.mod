@@ -7,12 +7,15 @@ require (
 	github.com/docker/docker v26.1.4+incompatible
 	github.com/ewohltman/discordgo-mock v0.0.11
 	github.com/go-enry/go-enry/v2 v2.8.8
+	github.com/gorilla/mux v1.8.1
+	github.com/gorilla/websocket v1.4.2
 	github.com/ktr0731/go-fuzzyfinder v0.8.0
 	github.com/mattn/go-sqlite3 v1.14.22
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.19.0
 	golang.org/x/oauth2 v0.21.0
+	google.golang.org/protobuf v1.34.1
 )
 
 require (
@@ -29,8 +32,6 @@ require (
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/gorilla/mux v1.8.1 // indirect
-	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/ktr0731/go-ansisgr v0.1.0 // indirect

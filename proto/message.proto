@@ -1,0 +1,27 @@
+syntax = "proto3";
+option go_package = "github.com/f4tal-err0r/discord_faas/proto";
+
+message GetContext {
+    string token = 1;
+    string guildID = 2;
+}
+
+message DeployFunc {
+    bytes func = 1; 
+    string runtime = 2;
+}
+
+message ContextResp {
+    string ClientID = 1;
+    string GuildID = 2;
+    string GuildName = 3;
+    bool CurrentContext = 4;
+}
+
+message Wrapper {
+    string token = 1;
+    string guildID = 2;
+    oneof Payload {
+        DeployFunc deployfunc = 3;
+    }
+}

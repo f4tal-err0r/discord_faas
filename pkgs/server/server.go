@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -35,8 +36,8 @@ func Start() {
 	}()
 
 	// start api server
-	srv := NewServer()
-	log.Fatal(srv.ListenAndServe())
+	router := Router()
+	log.Fatal(http.ListenAndServe(":8080", router))
 }
 
 func createDirIfNotExist(dirPath string) error {

@@ -26,13 +26,13 @@ func RegisterCommands(db *sql.DB, session *discordgo.Session) error {
 	commands := defaultCommands
 	guilds, err := session.UserGuilds(100, "", "", false)
 	if err != nil {
-		return fmt.Errorf("Error getting guilds: %v", err)
+		return fmt.Errorf("error getting guilds: %v", err)
 	}
 
 	for _, guild := range guilds {
 		cmdb, err := GetCmdsDb(db, StrToInt(guild.ID))
 		if err != nil {
-			return fmt.Errorf("Error getting commands: %v", err)
+			return fmt.Errorf("error getting commands: %v", err)
 		}
 
 		for _, cmd := range cmdb {
@@ -45,7 +45,7 @@ func RegisterCommands(db *sql.DB, session *discordgo.Session) error {
 		for _, cmd := range commands {
 			_, err := session.ApplicationCommandCreate(session.State.User.ID, guilds[0].ID, &cmd)
 			if err != nil {
-				return fmt.Errorf("Error creating command on guild %v: %v", guild.ID, err)
+				return fmt.Errorf("error creating command on guild %v: %v", guild.ID, err)
 			}
 		}
 

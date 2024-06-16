@@ -36,6 +36,10 @@ test/cover:
 	go test -v -race -buildvcs -coverprofile=/tmp/coverage.out $(shell go list ./... | grep -v 'runtime/')
 	go tool cover -html=/tmp/coverage.out
 
+.PHONY: protobuf
+protobuf:
+	protoc -I./proto --go_out=./proto --go_opt=paths=source_relative ./proto/*.proto
+
 ## build: build the application
 .PHONY: build
 build:

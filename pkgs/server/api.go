@@ -1,42 +1,64 @@
 package server
 
 import (
-	"encoding/json"
+	"bytes"
+	"fmt"
+	"io"
+	"log"
 	"net/http"
 	"strings"
+
+	"github.com/gorilla/mux"
+	"github.com/gorilla/websocket"
+	"google.golang.org/protobuf/proto"
+
+	pb "github.com/f4tal-err0r/discord_faas/pkgs/proto"
 
 	"github.com/f4tal-err0r/discord_faas/pkgs/config"
 )
 
-// TODO: Implement JWT authentication
+// Define an upgrader
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
 
-func NewServer() *http.Server {
-	mux := Router()
-	return &http.Server{
-		Addr:    ":8080",
-		Handler: mux,
+// WebSocket handler type
+type wsHandler func(conn *websocket.Conn, r *http.Request)
+
+// Middleware to upgrade all connections to WebSocket
+func wsWrapper(next wsHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Upgrade the connection to a WebSocket
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			log.Println("Connection Upgrade error:", err)
+			return
+		}
+		defer conn.Close()
+
+		// Call the next handler with the WebSocket connection
+		next(conn, r)
 	}
 }
 
-func Router() *http.ServeMux {
-	router := http.NewServeMux()
+func Router() *mux.Router {
+	router := mux.NewRouter()
 
-	router.HandleFunc("/api/context", ContextHandler)
+	router.HandleFunc("/api/deploy", wsWrapper(DeployHandler))
+	router.Handle("/api/context", http.HandlerFunc(ContextHandler))
 	return router
 }
 
-func APIPatchAuth(w http.ResponseWriter, r *http.Request) bool {
-	oauth, guild := r.Header.Get("X-Discord-Oauth"), r.Header.Get("X-Discord-GuildId")
-	if oauth == "" || guild == "" {
-		return false
-	}
+func APIPatchAuth(oauth string, guildid string) bool {
 
 	//Check User exists in guild
-	_, err := FetchGuildMember(oauth, guild)
+	_, err := FetchGuildMember(oauth, guildid)
 	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		w.Write([]byte(err.Error()))
-		w.(http.Flusher).Flush()
+		log.Print(err)
 		return false
 	}
 
@@ -46,19 +68,22 @@ func APIPatchAuth(w http.ResponseWriter, r *http.Request) bool {
 }
 
 func ContextHandler(w http.ResponseWriter, r *http.Request) {
-	if !APIPatchAuth(w, r) {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+
+	req, err := unmarshalRequest(r)
+	if err != nil {
+		log.Println("Error unmarshalling request: ", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	cfg, err := config.New()
 	if err != nil {
+		log.Println("Error getting config:", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	guildID := r.Header.Get("X-Discord-GuildId")
-	guild, err := GetGuildInfo(GetSession(cfg), guildID)
+	guild, err := GetGuildInfo(GetSession(cfg), req.GetGuildID())
 	if err != nil {
 		if strings.Contains(err.Error(), "404") {
 			http.Error(w, "Guild not found", http.StatusNotFound)
@@ -72,36 +97,43 @@ func ContextHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: ctx in the future should return a JWT
-	ctx := struct {
-		ClientID  string `json:"client_id"`
-		GuildID   string `json:"guild_id"`
-		GuildName string `json:"guild_name"`
-	}{
+	ctxPb, err := proto.Marshal(&pb.ContextResp{
 		ClientID:  cfg.Discord.ClientID,
-		GuildID:   guildID,
+		GuildID:   req.GetGuildID(),
 		GuildName: guild.Name,
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(ctx)
+	})
 	if err != nil {
+		log.Println("Error marshalling ctx: ", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
+	w.Write(ctxPb)
 }
 
-func DeployHandler(w http.ResponseWriter, r *http.Request) {
-	if !APIPatchAuth(w, r) {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-
+func DeployHandler(conn *websocket.Conn, r *http.Request) {
 	// Recieve a file from the request
-	file, _, err := r.FormFile("file")
+	_, p, err := conn.ReadMessage()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Println("Error reading message:", err)
+		conn.WriteMessage(websocket.TextMessage, []byte(err.Error()))
+		conn.Close()
 		return
 	}
-	defer file.Close()
 
+	// Assume the body is a file
+	_ = bytes.NewReader(p)
+}
+
+func unmarshalRequest(r *http.Request) (*pb.DeployFunc, error) {
+	wrapper := new(pb.Wrapper)
+
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		return nil, fmt.Errorf("invalid request: %w", err)
+	}
+	if err := proto.Unmarshal(data, wrapper); err != nil {
+		return nil, fmt.Errorf("invalid request: %w", err)
+	}
+
+	return wrapper.GetDeployFunc(), nil
 }

@@ -1,6 +1,7 @@
 package client
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -8,22 +9,14 @@ import (
 	"net/http"
 	"os"
 
+	pb "github.com/f4tal-err0r/discord_faas/proto"
 	fzf "github.com/ktr0731/go-fuzzyfinder"
 )
 
-type ContextResp struct {
-	ClientID       string `json:"client_id"`
-	GuildID        string `json:"guild_id"`
-	GuildName      string `json:"guild_name"`
-	CurrentContext bool
-	//TODO: *JWTToken
-}
-
 //TODO: Serialize future JWT token to server here, verifying ident w/ Oauth token
 
-func NewContext(url string, guildid string) *ContextResp {
-	// Create a request to the endpoint
-	req, err := http.NewRequest("GET", url+"/api/context", nil)
+func NewContext(url string, guildid string) *pb.ContextResp {
+	req, err := http.NewRequest("POST", url+"/api/context", nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -34,20 +27,25 @@ func NewContext(url string, guildid string) *ContextResp {
 		log.Fatal(err)
 	}
 
-	req.Header.Set("X-Discord-Oauth", oauth)
-	req.Header.Set("X-Discord-GuildId", guildid)
+	contextRequest := pb.Context{
+		GuildID: guildid,
+		Token:   oauth,
+	}
+
+	// Send protobuf request to server
+	req.Header.Set("Content-Type", "application/json")
+	jsonBody, err := json.Marshal(&contextRequest)
+	if err != nil {
+		log.Fatal(err)
+	}
+	req.Body = io.NopCloser(bytes.NewBuffer(jsonBody))
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		log.Fatalf("Failed to fetch context: %s", resp.Status)
-		log.Fatalf("%v", resp.Body)
-	}
-
-	var ctx ContextResp
+	var ctx pb.ContextResp
 	// Decode the response
 	if err := json.NewDecoder(resp.Body).Decode(&ctx); err != nil {
 		fmt.Print("Unable to decode response")
@@ -84,7 +82,7 @@ func NewContext(url string, guildid string) *ContextResp {
 	return &ctx
 }
 
-func SerializeContextList(ctxl []*ContextResp) error {
+func SerializeContextList(ctxl []*pb.ContextResp) error {
 	cacheDir := FetchCacheDir("context")
 
 	file, err := createFileIfNotExists(cacheDir)
@@ -102,8 +100,8 @@ func SerializeContextList(ctxl []*ContextResp) error {
 }
 
 // Load context from cache
-func LoadContextList() ([]*ContextResp, error) {
-	var localctx []*ContextResp
+func LoadContextList() ([]*pb.ContextResp, error) {
+	var localctx []*pb.ContextResp
 	cacheDir := FetchCacheDir("context")
 	file, err := createFileIfNotExists(cacheDir)
 	// If error returns EOF, return empty list
@@ -122,7 +120,7 @@ func LoadContextList() ([]*ContextResp, error) {
 	return localctx, nil
 }
 
-func SwitchContext(ctxl []*ContextResp, gid string) {
+func SwitchContext(ctxl []*pb.ContextResp, gid string) {
 	if len(ctxl) == 0 {
 		fmt.Println("No contexts found")
 	}
@@ -135,7 +133,7 @@ func SwitchContext(ctxl []*ContextResp, gid string) {
 	}
 }
 
-func GetCurrentContext() *ContextResp {
+func GetCurrentContext() *pb.ContextResp {
 	ctxl, err := LoadContextList()
 	if err != nil {
 		log.Fatal(err)
