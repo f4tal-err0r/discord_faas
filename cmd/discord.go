@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/f4tal-err0r/discord_faas/pkgs/client"
@@ -9,6 +10,7 @@ import (
 
 func init() {
 	discordCmd.AddCommand(login)
+	discordCmd.AddCommand(currentUser)
 }
 
 var discordCmd = &cobra.Command{
@@ -20,8 +22,17 @@ var login = &cobra.Command{
 	Use:   "login",
 	Short: "Auth to your Discord Guild",
 	Run: func(cmd *cobra.Command, args []string) {
-		if _, err := client.StartAuth(); err != nil {
+		dauth := client.NewUserAuth()
+		if _, err := dauth.StartAuth(); err != nil {
 			log.Fatal(err)
 		}
+	},
+}
+
+var currentUser = &cobra.Command{
+	Use:   "current-user",
+	Short: "Get the current user",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Printf("Current User: %s", client.GetCurrentUser().String())
 	},
 }

@@ -23,7 +23,7 @@ func NewContext(url string, guildid string) *pb.ContextResp {
 	}
 
 	// Send the request with headers
-	oauth, err := GetToken()
+	oauth, err := NewUserAuth().GetToken()
 	if err != nil {
 		log.Fatal(err)
 	}
