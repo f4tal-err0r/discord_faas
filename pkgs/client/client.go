@@ -8,8 +8,8 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func getCurrentUser() *discordgo.User {
-	token, err := GetToken()
+func GetCurrentUser() *discordgo.User {
+	token, err := NewUserAuth().GetToken()
 	if err != nil {
 		log.Fatalf("Error getting token: %v", err)
 	}
