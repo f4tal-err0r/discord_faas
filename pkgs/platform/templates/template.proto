@@ -1,0 +1,12 @@
+syntax = "proto3";
+option go_package = "github.com/f4tal-err0r/discord_faas/platform/templates";
+
+message File {
+    bytes Data = 1;
+    string Name = 2;
+}
+message DiscordResp {
+    string Message = 1;
+    string Embed = 2;
+    repeated File Files = 3;
+}

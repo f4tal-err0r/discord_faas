@@ -16,6 +16,7 @@ help:
 .PHONY: protobuf
 protobuf:
 	protoc -I./proto --go_out=./proto --go_opt=paths=source_relative ./proto/*.proto
+	protoc --go_out=./proto ./pkgs/platform/templates/template.proto
 
 ## test: run all tests
 .PHONY: test
