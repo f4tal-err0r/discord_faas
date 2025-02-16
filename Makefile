@@ -15,8 +15,13 @@ help:
 
 .PHONY: protobuf
 protobuf:
-	protoc -I./proto --go_out=./proto --go_opt=paths=source_relative ./proto/*.proto
-	protoc --go_out=./proto ./pkgs/platform/templates/template.proto
+	protoc --go_out=./ --go_opt=paths=source_relative ./proto/*.proto
+	protoc --go_out=./pkgs/platform  --go_out=./ --go_opt=Mpkgs/platform/content.proto=github.com/f4tal-err0r/discord_faas/pkgs/platform --go_opt=paths=source_relative ./pkgs/platform/content.proto
+
+.PHONY: protobuf-template
+protobuf-template:
+	protoc --go_out=./pkgs/platform/templates/golang ./pkgs/platform/content.proto
+	protoc --ruby_out=./pkgs/platform/templates/ruby ./pkgs/platform/content.proto
 
 ## test: run all tests
 .PHONY: test

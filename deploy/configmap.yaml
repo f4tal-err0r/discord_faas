@@ -2,6 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: discord-faas-config
-data: |
-  Discord:
-    DISCORD_TOKEN: value
+data:
+  config.yml: |
+    Discord:
+      DISCORD_TOKEN: value
