@@ -8,4 +8,4 @@ initenv.sh
 config.yaml
 bin/
 test/
-**/*.pb.*
+**/*pb.*
