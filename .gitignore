@@ -8,4 +8,4 @@ initenv.sh
 config.yaml
 bin/
 test/
-proto/**.pb.go
+**/**pb.*

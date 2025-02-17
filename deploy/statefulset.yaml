@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: discord-faas
+spec:
+  selector:
+    matchLabels:
+      app: discord-faas
+  serviceName: discord-faas
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: discord-faas
+    spec:
+      containers:
+      - name: discord-faas-controller
+        command: ["/app/faas_server"]
+        args: ["server", "start"]
+        image: ymekuria/discord-faas:dev
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        volumeMounts:
+          - mountPath: /app/config
+            name: config
+            readOnly: true
+        envFrom:
+        - secretRef:
+            name: discord-faas
+      volumes:
+      - name: config
+        configMap:
+          name: discord-faas-config
+          defaultMode: 0644
+  volumeClaimTemplates:
+  - metadata:
+      name: discord-faas
+    spec:
+      accessModes: [ "ReadWriteOncePod" ]
+      resources:
+        requests:
+          storage: 5Gi

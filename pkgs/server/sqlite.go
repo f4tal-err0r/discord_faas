@@ -85,34 +85,28 @@ func InitDB(db *sql.DB) error {
 }
 
 func RowWriter(db *sql.DB, v interface{}) error {
-	switch T := v.(type) {
+	var insertSQL string
+	var args []interface{}
+
+	switch row := v.(type) {
 	case GuildMetaRow:
-		row := T
-		insertSQL := `INSERT INTO GuildMetadata (guildid, source, name, owner, textchan) VALUES (?, ?, ?, ?, ?)`
-		_, err := db.Exec(insertSQL, row.Guildid, row.Source, row.Name, row.Owner, row.Textchan)
-		if err != nil {
-			return fmt.Errorf("failed to insert entry: %v", err)
-		}
-		return nil
+		insertSQL = `INSERT INTO GuildMetadata (guildid, source, name, owner, textchan) VALUES (?, ?, ?, ?, ?)`
+		args = []interface{}{row.Guildid, row.Source, row.Name, row.Owner, row.Textchan}
 	case CommandsTableRow:
-		row := T
-		time := time.Now()
-		insertSQL := `INSERT INTO Commands (command, hash, last_modified, guildid, desc, runtime) VALUES (?, ?, ?, ?, ?, ?)`
-		_, err := db.Exec(insertSQL, row.Command, row.Hash, time, row.Guildid, row.Desc, row.Runtime)
-		if err != nil {
-			return fmt.Errorf("failed to insert entry: %v", err)
-		}
-		return nil
+		insertSQL = `INSERT INTO Commands (command, hash, last_modified, guildid, desc, runtime) VALUES (?, ?, ?, ?, ?, ?)`
+		args = []interface{}{row.Command, row.Hash, time.Now(), row.Guildid, row.Desc, row.Runtime}
 	case ApprovedRolesRow:
-		row := T
-		insertSQL := `INSERT INTO ApprovedRoles (roleid, guildid) VALUES (?, ?)`
-		_, err := db.Exec(insertSQL, row.Roleid, row.Guildid)
-		if err != nil {
-			return fmt.Errorf("failed to insert entry: %v", err)
-		}
-		return nil
+		insertSQL = `INSERT INTO ApprovedRoles (roleid, guildid) VALUES (?, ?)`
+		args = []interface{}{row.Roleid, row.Guildid}
+	default:
+		return fmt.Errorf("Error: Invalid type provided to Row Writer")
 	}
-	return fmt.Errorf("Error: Invalid type provided to Row Writer")
+
+	_, err := db.Exec(insertSQL, args...)
+	if err != nil {
+		return fmt.Errorf("failed to insert entry: %v", err)
+	}
+	return nil
 }
 
 func InitGuildData(session *discordgo.Session, db *sql.DB) error {
@@ -134,10 +128,6 @@ func InitGuildData(session *discordgo.Session, db *sql.DB) error {
 	}
 
 	for _, gid := range newGuilds {
-		if err != nil {
-			return fmt.Errorf("Error getting default channel: %v", err)
-		}
-
 		guild, err := GetGuildInfo(session, gid)
 		if err != nil {
 			return fmt.Errorf("Error getting guild: %v", err)

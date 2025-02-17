@@ -8,19 +8,19 @@ import (
 )
 
 type Config struct {
-	Discord     Discord `mapstructure:"DISCORD"`
-	Filestore   string  `mapstructure:"FILESTORE"`
-	DBPath      string  `mapstructure:"DBPATH"`
-	RuntimeRepo string  `mapstructure:"RUNTIMEREPO"`
+	Discord   Discord `mapstructure:"discord"`
+	Filestore string  `mapstructure:"filestore"`
+	DBPath    string  `mapstructure:"dbpath"`
 }
 
 type Discord struct {
-	Token    string `mapstructure:"TOKEN"`
-	ClientID string `mapstructure:"CLIENTID"`
+	Token    string `mapstructure:"token"`
+	ClientID string `mapstructure:"clientid"`
+	AdminUID string `mapstructure:"adminuid"`
 }
 
 func New() (*Config, error) {
-	return NewPathConfig("")
+	return NewPathConfig("/app/config/config.yaml")
 }
 
 func NewPathConfig(path string) (*Config, error) {
@@ -32,8 +32,9 @@ func NewPathConfig(path string) (*Config, error) {
 
 	viper.SetConfigFile(path)
 
-	viper.SetDefault("filestore", "/opt/dfaas")
-	viper.SetDefault("runtimerepo", "github.com/f4tal-err0r/discord_faas/runtimes/")
+	viper.AutomaticEnv()
+	viper.BindEnv("discord.token", "DISCORD_TOKEN")
+
 	cpath, err := os.UserCacheDir()
 	if err != nil {
 		return nil, fmt.Errorf("Unable to resolve CacheDir: %s.", err)
@@ -50,5 +51,11 @@ func NewPathConfig(path string) (*Config, error) {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
+	if cfg.Discord.Token == "" {
+		return nil, fmt.Errorf("missing config: discord.token")
+	}
+	if cfg.Discord.ClientID == "" {
+		return nil, fmt.Errorf("missing config: discord.clientid")
+	}
 	return &cfg, nil
 }

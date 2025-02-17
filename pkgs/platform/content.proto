@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+option go_package = "./function";
+
+message File {
+    bytes Data = 1;
+    string Name = 2;
+}
+message DiscordContent {
+    string Command = 1;
+    map<string, string> Args = 2;
+}
+
+message DiscordResp {
+    string Message = 1;
+    string Embed = 2;
+    repeated File Files = 3;
+}

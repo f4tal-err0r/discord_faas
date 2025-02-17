@@ -38,12 +38,7 @@ var funcRuntimeCmd = &cobra.Command{
 	Use:   "runtimes",
 	Short: "List available runtimes",
 	Run: func(cmd *cobra.Command, args []string) {
-		runtimes, err := platform.ListRuntimes()
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		for _, runtime := range runtimes {
+		for runtime, _ := range platform.UserLangDir {
 			fmt.Println(runtime)
 		}
 	},

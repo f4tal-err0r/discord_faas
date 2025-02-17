@@ -1,8 +1,10 @@
-FROM golang:1.21.7-alpine
+FROM golang:1.24.0
 WORKDIR /app
-ADD . /app
+ADD . .
 RUN go mod download
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" ./cmd/discord_bot -o /app/discord_bot/
+RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o /app/faas_server ./cmd/
 
-FROM alpine:latest
-CMD ["/app/discord_faas"]
+FROM debian:12-slim
+RUN apt update && apt install -y ca-certificates
+COPY --from=0 /app/faas_server /app/faas_server
+CMD ["/app/faas_server"]
