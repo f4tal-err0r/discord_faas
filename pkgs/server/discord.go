@@ -60,7 +60,7 @@ func GetSession(cfg *config.Config) *discordgo.Session {
 		log.Fatalf("ERR: %s", err)
 	}
 	if err := dc.Open(); err != nil {
-		log.Fatal(err)
+		log.Fatal(fmt.Errorf("websocket error: %v", err))
 	}
 	return dc
 }

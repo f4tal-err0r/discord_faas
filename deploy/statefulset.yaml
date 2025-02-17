@@ -7,7 +7,7 @@ spec:
     matchLabels:
       app: discord-faas
   serviceName: discord-faas
-  replicas: 2
+  replicas: 1
   template:
     metadata:
       labels:
@@ -15,25 +15,31 @@ spec:
     spec:
       containers:
       - name: discord-faas-controller
-        command: ["/app/discord-faas"]
-        args: ["start"]
-        image: discord-faas
+        command: ["/app/faas_server"]
+        args: ["server", "start"]
+        image: ymekuria/discord-faas:dev
+        imagePullPolicy: Always
         resources:
           limits:
             memory: "128Mi"
             cpu: "500m"
         volumeMounts:
-          - mountPath: /app/config.yml
+          - mountPath: /app/config
             name: config
+            readOnly: true
+        envFrom:
+        - secretRef:
+            name: discord-faas
       volumes:
       - name: config
         configMap:
           name: discord-faas-config
+          defaultMode: 0644
   volumeClaimTemplates:
   - metadata:
       name: discord-faas
     spec:
-      accessModes: [ "ReadWriteOnce" ]
+      accessModes: [ "ReadWriteOncePod" ]
       resources:
         requests:
-          storage: 1Gi
+          storage: 5Gi

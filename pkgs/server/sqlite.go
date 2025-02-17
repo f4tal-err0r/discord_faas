@@ -128,10 +128,6 @@ func InitGuildData(session *discordgo.Session, db *sql.DB) error {
 	}
 
 	for _, gid := range newGuilds {
-		if err != nil {
-			return fmt.Errorf("Error getting default channel: %v", err)
-		}
-
 		guild, err := GetGuildInfo(session, gid)
 		if err != nil {
 			return fmt.Errorf("Error getting guild: %v", err)

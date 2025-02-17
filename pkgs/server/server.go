@@ -56,7 +56,7 @@ func createDirIfNotExist(dirPath string) error {
 }
 
 func InitServer(cfg *config.Config) {
-	if err := createDirIfNotExist(cfg.Filestore); err != nil {
+	if err := createDirIfNotExist("/opt/dfaas"); err != nil {
 		log.Fatalf("ERR: Unable to create dir %s: %v", cfg.Filestore, err)
 	}
 	db, err := NewDB(cfg)
