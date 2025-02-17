@@ -39,7 +39,7 @@ type Labels struct {
 
 var UserLangDir = map[string][]string{
 	"golang": []string{"function/*"},
-	"ruby":   []string{"Dockerfile", "function.rb", "content_pb.rb", "Makefile"},
+	"ruby":   []string{"function.rb", "content_pb.rb"},
 }
 
 //go:embed templates/*
