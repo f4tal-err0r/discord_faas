@@ -2,6 +2,7 @@ module github.com/f4tal-err0r/discord_faas
 
 go 1.22.3
 
+
 require (
 	github.com/bwmarrin/discordgo v0.28.1
 	github.com/docker/docker v26.1.4+incompatible

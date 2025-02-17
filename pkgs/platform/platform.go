@@ -39,9 +39,10 @@ type Labels struct {
 
 var UserLangDir = map[string][]string{
 	"golang": []string{"function/*"},
-	"ruby":   []string{"function.rb", "content_pb.rb"},
+	"ruby":   []string{"Dockerfile", "function.rb", "content_pb.rb", "Makefile"},
 }
 
+//go:embed templates/*
 //go:embed templates/*
 var RuntimeFiles embed.FS
 
@@ -53,17 +54,33 @@ func FunctionTemplate(name string, build bool, runtime string) error {
 	}
 
 	cfp, err := os.Getwd()
+	cfp, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("error getting working directory: %v", err)
 	}
 
 	if err = os.MkdirAll(filepath.Join(cfp, name), 0755); err != nil {
+	if err = os.MkdirAll(filepath.Join(cfp, name), 0755); err != nil {
 		return fmt.Errorf("error creating directory: %v", err)
+	} else {
+		fmt.Printf("./%s/\n", name)
 	} else {
 		fmt.Printf("./%s/\n", name)
 	}
 
 	var render func(string) error
+
+	// print all names of files in RuntimeFiles
+	// list, err := RuntimeFiles.ReadDir("templates/" + runtime + "/function")
+	// if err != nil {
+
+	// 	return fmt.Errorf("error reading runtime directory: %v", err)
+	// }
+	// fmt.Println("Available files in template:")
+	// for _, f := range list {
+	// 	fmt.Println(f.Name())
+	// }
+	// return nil
 
 	render = func(fp string) error {
 		if strings.HasSuffix(fp, "/*") {
@@ -74,6 +91,7 @@ func FunctionTemplate(name string, build bool, runtime string) error {
 			}
 			for _, embedfp := range dirFiles {
 				err := render(fp + "/" + embedfp.Name())
+				err := render(fp + "/" + embedfp.Name())
 				if err != nil {
 					return err
 				}
@@ -81,15 +99,24 @@ func FunctionTemplate(name string, build bool, runtime string) error {
 			return nil
 		}
 		data, err := RuntimeFiles.ReadFile(fp)
+		data, err := RuntimeFiles.ReadFile(fp)
 		if err != nil {
 			return fmt.Errorf("error reading runtime file: %v", err)
 		}
+		err = os.WriteFile(filepath.Join(cfp, name, filepath.Base(fp)), data, 0644)
 		err = os.WriteFile(filepath.Join(cfp, name, filepath.Base(fp)), data, 0644)
 		if err != nil {
 			return fmt.Errorf("error writing file: %v", err)
 		}
 		fmt.Print("./" + filepath.Join(name, filepath.Base(fp)) + "\n")
+		fmt.Print("./" + filepath.Join(name, filepath.Base(fp)) + "\n")
 		return nil
+	}
+
+	for _, usrfiles := range UserLangDir[runtime] {
+		if err := render(filepath.Join("templates", runtime, usrfiles)); err != nil {
+			return err
+		}
 	}
 
 	for _, usrfiles := range UserLangDir[runtime] {

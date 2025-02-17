@@ -24,9 +24,24 @@ func Start() {
 		log.Fatalf("ERR: Unable to create config: %v", err)
 	}
 
-	InitServer(cfg)
+	if err := createDirIfNotExist("/opt/dfaas"); err != nil {
+		log.Fatalf("ERR: Unable to create dir %s: %v", cfg.Filestore, err)
+	}
+	db, err := NewDB(cfg)
+	if err != nil {
+		log.Fatalf("ERR: Unable to create db: %v", err)
+	}
+	err = InitDB(db)
+	if err != nil {
+		log.Fatalf("ERR: Unable to create sqlitedb: %v", err)
+	}
 
 	dc := GetSession(cfg)
+
+	if err := RegisterCommands(db, dc); err != nil {
+		log.Printf("ERR: Unable to register commands: %v", err)
+	}
+
 	log.Print("Bot Started...")
 
 	dc.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
@@ -75,18 +90,4 @@ func createDirIfNotExist(dirPath string) error {
 		return nil
 	}
 	return nil
-}
-
-func InitServer(cfg *config.Config) {
-	if err := createDirIfNotExist("/opt/dfaas"); err != nil {
-		log.Fatalf("ERR: Unable to create dir %s: %v", cfg.Filestore, err)
-	}
-	db, err := NewDB(cfg)
-	if err != nil {
-		log.Fatalf("ERR: Unable to create db: %v", err)
-	}
-	err = InitDB(db)
-	if err != nil {
-		log.Fatalf("ERR: Unable to create sqlitedb: %v", err)
-	}
 }

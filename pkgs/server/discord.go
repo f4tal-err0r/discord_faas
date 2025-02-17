@@ -4,25 +4,28 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"sync"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/f4tal-err0r/discord_faas/pkgs/config"
 )
 
 var (
-	contextToken    sync.Map
+	systemCommands = []discordgo.ApplicationCommand{
+		{
+			Name:        "allowuser",
+			Description: "Allows a guild , this is only available to the bot owner",
+		},
+		{
+			Name:        "allowguild",
+			Description: "Add a command, this is only available to the bot owner",
+		},
+	}
 	defaultCommands = []discordgo.ApplicationCommand{
 		{
 			Name:        "help",
-			Description: "Information around Discord FaaS",
-		},
-		{
-			Name:        "login",
-			Description: "Generate a login token for the command line client",
+			Description: "Get help",
 		},
 	}
-	defaultCommandMap = map[string]func(*discordgo.Interaction) *discordgo.InteractionResponse{}
 )
 
 func RegisterCommands(db *sql.DB, session *discordgo.Session) error {
@@ -46,6 +49,7 @@ func RegisterCommands(db *sql.DB, session *discordgo.Session) error {
 			})
 		}
 		for _, cmd := range commands {
+			_, err := session.ApplicationCommandCreate(session.State.User.ID, guild.ID, &cmd)
 			_, err := session.ApplicationCommandCreate(session.State.User.ID, guild.ID, &cmd)
 			if err != nil {
 				return fmt.Errorf("error creating command on guild %v: %v", guild.ID, err)
