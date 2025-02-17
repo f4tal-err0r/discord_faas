@@ -70,18 +70,6 @@ func FunctionTemplate(name string, build bool, runtime string) error {
 
 	var render func(string) error
 
-	// print all names of files in RuntimeFiles
-	// list, err := RuntimeFiles.ReadDir("templates/" + runtime + "/function")
-	// if err != nil {
-
-	// 	return fmt.Errorf("error reading runtime directory: %v", err)
-	// }
-	// fmt.Println("Available files in template:")
-	// for _, f := range list {
-	// 	fmt.Println(f.Name())
-	// }
-	// return nil
-
 	render = func(fp string) error {
 		if strings.HasSuffix(fp, "/*") {
 			fp = strings.TrimSuffix(fp, "/*")
