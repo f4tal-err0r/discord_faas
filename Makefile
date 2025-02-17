@@ -16,8 +16,13 @@ help:
 
 .PHONY: protobuf-template
 protobuf-template:
-	protoc --go_out=./pkgs/platform/templates/golang ./pkgs/platform/content.proto
-	protoc --ruby_out=./pkgs/platform/templates/ruby --ruby_out=./ ./pkgs/platform/content.proto
+	protoc --go_opt=Mpkgs/platform/content.proto=./function --go_out=./pkgs/platform/templates/golang ./pkgs/platform/content.proto
+	protoc --proto_path=./pkgs/platform --ruby_out=./pkgs/platform/templates/ruby ./pkgs/platform/content.proto
+
+.PHONY: protobuf
+protobuf: protobuf-template
+	protoc --go_out=./ --go_opt=paths=source_relative ./proto/*.proto
+	protoc --go_out=pkgs/ --go_opt=Mpkgs/platform/content.proto=./platform ./pkgs/platform/content.proto
 
 ## test: run all tests
 .PHONY: test
