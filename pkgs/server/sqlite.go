@@ -10,7 +10,8 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/f4tal-err0r/discord_faas/pkgs/cache"
 	"github.com/f4tal-err0r/discord_faas/pkgs/config"
-	_ "github.com/mattn/go-sqlite3"
+
+	_ "modernc.org/sqlite"
 )
 
 type GuildMetaRow struct {
@@ -40,7 +41,7 @@ var RolesCache = cache.New()
 var GuildMetaCache = cache.New()
 
 func NewDB(cfg *config.Config) (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", cfg.DBPath)
+	db, err := sql.Open("sqlite", cfg.DBPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %v", err)
 	}

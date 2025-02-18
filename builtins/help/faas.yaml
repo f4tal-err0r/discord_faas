@@ -1,0 +1,10 @@
+name: "help"
+description: "Help message and docs for Discord FaaS"
+version: "0.0.1"
+commands:
+  - name: "option1"
+    description: "Example of passing a discord slash command"
+    args:
+      - name: "arg1"
+        description: "Example of passing an argument to a discord slash command"
+        required: true

@@ -1,6 +1,11 @@
 syntax = "proto3";
 option go_package = "github.com/f4tal-err0r/discord_faas/proto";
 
+message GetContext {
+    string token = 1;
+    string guildID = 2;
+}
+
 message Args {
     string Name = 1;
     string Description = 2;
@@ -28,12 +33,15 @@ message ContextResp {
     string GuildName = 3;
     string ServerURL = 4;
     bool CurrentContext = 5;
+    string ServerURL = 4;
+    bool CurrentContext = 5;
 }
 
 message Wrapper {
     string token = 1;
     string guildID = 2;
     oneof Payload {
+        BuildFunc BuildImage = 3;
         BuildFunc BuildImage = 3;
     }
 }

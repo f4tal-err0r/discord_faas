@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/gorilla/mux"
@@ -50,6 +51,9 @@ func Router() *mux.Router {
 
 	router.HandleFunc("/api/deploy", wsWrapper(DeployHandler))
 	router.Handle("/api/context", http.HandlerFunc(ContextHandler))
+	router.HandleFunc("/dfaas", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(fmt.Sprintf("%s\n%s\n", os.Getenv("POD_NAME"), os.Getenv("POD_NAMESPACE"))))
+	})
 	return router
 }
 
