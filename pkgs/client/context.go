@@ -43,7 +43,7 @@ func NewContext(uri string, token string) *pb.ContextResp {
 		log.Fatal(err)
 	}
 
-	CtxList, err := GetContextList()
+	CtxList, err := LoadContextList()
 	if err != nil {
 		fmt.Print("Unable to load context list")
 		log.Fatal(err)
@@ -90,7 +90,8 @@ func SerializeContextList(ctxl []*pb.ContextResp) error {
 	return json.NewEncoder(file).Encode(ctxl)
 }
 
-func GetContextList() ([]*pb.ContextResp, error) {
+// Load context from cache
+func LoadContextList() ([]*pb.ContextResp, error) {
 	var localctx []*pb.ContextResp
 	cacheDir := FetchCacheDir("context")
 	file, err := createFileIfNotExists(cacheDir)
@@ -124,7 +125,7 @@ func SwitchContext(ctxl []*pb.ContextResp, gid string) {
 }
 
 func GetCurrentContext() *pb.ContextResp {
-	ctxl, err := GetContextList()
+	ctxl, err := LoadContextList()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -137,7 +138,7 @@ func GetCurrentContext() *pb.ContextResp {
 }
 
 func ListContexts() {
-	ContextList, err := GetContextList()
+	ContextList, err := LoadContextList()
 	if err != nil {
 		log.Fatalf("failed to load context list: %v", err)
 	}

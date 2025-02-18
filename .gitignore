@@ -8,5 +8,10 @@ initenv.sh
 config.yaml
 bin/
 test/
+<<<<<<< HEAD
 test*
 **/**pb.*
+=======
+**/**pb.*
+.vscode/
+>>>>>>> 2e779ef (wip checkpoint)

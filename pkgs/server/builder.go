@@ -8,9 +8,11 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	proto "github.com/f4tal-err0r/discord_faas/proto"
 )
 
-func createKanikoJob(buildImage BuildImage) *batchv1.Job {
+func createKanikoJob(buildImage proto.BuildFunc) *batchv1.Job {
 	registryUrl := fmt.Sprintf("%s.%s.internal", os.Getenv("POD_NAME"), os.Getenv("POD_NAMESPACE"))
 
 	return &batchv1.Job{

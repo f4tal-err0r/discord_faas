@@ -6,7 +6,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/gorilla/mux"
@@ -49,10 +48,17 @@ func wsWrapper(next wsHandler) http.HandlerFunc {
 func Router() *mux.Router {
 	router := mux.NewRouter()
 
-	router.HandleFunc("/api/deploy", wsWrapper(DeployHandler))
-	router.Handle("/api/context", http.HandlerFunc(ContextHandler))
-	router.HandleFunc("/dfaas", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(fmt.Sprintf("%s\n%s\n", os.Getenv("POD_NAME"), os.Getenv("POD_NAMESPACE"))))
+	api := router.PathPrefix("/api").Subrouter()
+	api.HandleFunc("/deploy", wsWrapper(DeployHandler))
+	api.HandleFunc("/context", ContextHandler)
+	api.HandleFunc("/context/clientid", func(w http.ResponseWriter, r *http.Request) {
+		cfg, err := config.New()
+		if err != nil {
+			log.Println("Error getting config:", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Write([]byte(cfg.Discord.ClientID))
 	})
 	return router
 }
