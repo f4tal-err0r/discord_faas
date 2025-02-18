@@ -16,6 +16,7 @@ message ContextResp {
     string GuildID = 2;
     string GuildName = 3;
     bool CurrentContext = 4;
+    string Token = 5;
 }
 
 message Wrapper {

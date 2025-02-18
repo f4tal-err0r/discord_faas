@@ -1,5 +1,5 @@
 # Change these variables as necessary.
-MAIN_PACKAGE_PATH := ./cmd/
+MAIN_PACKAGE_PATH := ./cmd/server
 BINARY_NAME := dfaas
 EXCLUDE_TEST := "TestContext"
 
@@ -13,15 +13,15 @@ help:
 	@echo 'Usage:'
 	@sed -n s/^##//p' ${MAKEFILE_LIST} | column -t -s ':' |  sed -e 's/^/ /
 
-.PHONY: protobuf
-protobuf:
-	protoc --go_out=./ --go_opt=paths=source_relative ./proto/*.proto
-	protoc --go_out=./pkgs/platform  --go_out=./ --go_opt=Mpkgs/platform/content.proto=github.com/f4tal-err0r/discord_faas/pkgs/platform --go_opt=paths=source_relative ./pkgs/platform/content.proto
-
 .PHONY: protobuf-template
 protobuf-template:
-	protoc --go_out=./pkgs/platform/templates/golang ./pkgs/platform/content.proto
-	protoc --ruby_out=./pkgs/platform/templates/ruby ./pkgs/platform/content.proto
+	protoc --go_opt=Mpkgs/platform/content.proto=./function --go_out=./pkgs/platform/templates/golang ./pkgs/platform/content.proto
+	protoc --proto_path=./pkgs/platform --ruby_out=./pkgs/platform/templates/ruby ./pkgs/platform/content.proto
+
+.PHONY: protobuf
+protobuf: protobuf-template
+	protoc --go_out=./ --go_opt=paths=source_relative ./proto/*.proto
+	protoc --go_out=pkgs/ --go_opt=Mpkgs/platform/content.proto=./platform ./pkgs/platform/content.proto
 
 ## test: run all tests
 .PHONY: test

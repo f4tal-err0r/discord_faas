@@ -1,7 +1,5 @@
 syntax = "proto3";
 
-option go_package = "./function";
-
 message File {
     bytes Data = 1;
     string Name = 2;
