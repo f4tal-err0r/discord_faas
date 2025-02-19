@@ -38,7 +38,7 @@ func NewJWT() *JWTService {
 }
 
 // Create new JWT token
-func (t *JWTService) CreateToken(claims jwt.Claims) (string, error) {
+func (t *JWTService) CreateToken(claims Claims) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
 	token.Header["kid"] = "1"
 	tokenString, err := token.SignedString(t.privateKey)
