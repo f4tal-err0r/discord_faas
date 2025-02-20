@@ -12,21 +12,34 @@ import (
 
 var (
 	contextToken    sync.Map
-	defaultCommands = []discordgo.ApplicationCommand{
-		{
-			Name:        "help",
+	defaultCommands = map[string]DefaultCommandData{
+		"help": {
 			Description: "Information around Discord FaaS",
 		},
-		{
-			Name:        "login",
+		"login": {
 			Description: "Generate a login token for the command line client",
+			Function:    loginCommand,
 		},
 	}
-	defaultCommandMap = map[string]func(*discordgo.Interaction) *discordgo.InteractionResponse{}
 )
 
+type DefaultCommandData struct {
+	Description string
+	Function    func(i *discordgo.Interaction) *discordgo.InteractionResponse
+}
+
 func RegisterCommands(db *sql.DB, session *discordgo.Session) error {
-	commands := defaultCommands
+	var commands []discordgo.ApplicationCommand
+
+	//init default commands
+	for k, v := range defaultCommands {
+		commands = append(commands, discordgo.ApplicationCommand{
+			Name:        k,
+			Description: v.Description,
+			//TODO: Add options
+		})
+	}
+
 	guilds, err := session.UserGuilds(100, "", "", false)
 	if err != nil {
 		return fmt.Errorf("error getting guilds: %v", err)
@@ -79,7 +92,9 @@ func loginCommand(i *discordgo.Interaction) *discordgo.InteractionResponse {
 
 	message := &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{},
+		Data: &discordgo.InteractionResponseData{
+			Flags: discordgo.MessageFlagsEphemeral,
+		},
 	}
 
 	cfg, err := config.New()
@@ -95,6 +110,17 @@ func loginCommand(i *discordgo.Interaction) *discordgo.InteractionResponse {
 	}
 	contextToken.Store(token, i.GuildID)
 
-	message.Data.Content = "To Login to the command line client, use the following command: `dfaas context connect --url https://" + cfg.URLDomain + " --token " + token + "`\nTo Download the CLI Client: https://github.com/f4tal-err0r/discord_faas/"
+	message.Data.Content = "To Login to the command line client, use the following command: `dfaas context connect --url https://" + cfg.URLDomain + " --token " + token +
+		"`\nTo Download the CLI Client: https://github.com/f4tal-err0r/discord_faas/"
 	return message
+}
+
+func helpCommand(i *discordgo.Interaction) *discordgo.InteractionResponse {
+	return &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: "TODO: Documentation for the help command",
+			Flags:   discordgo.MessageFlagsEphemeral,
+		},
+	}
 }

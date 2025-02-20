@@ -10,3 +10,4 @@ bin/
 test/
 **/**pb.*
 .vscode/
+test.Dockerfile

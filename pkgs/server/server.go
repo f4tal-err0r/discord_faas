@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"slices"
 	"syscall"
 
 	"github.com/bwmarrin/discordgo"
@@ -46,23 +45,17 @@ func Start() {
 
 	dc.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		if i.Type == discordgo.InteractionApplicationCommand {
-			if slices.ContainsFunc(defaultCommands, func(c discordgo.ApplicationCommand) bool {
-				return c.Name == i.ApplicationCommandData().Name
-			}) {
-
-				if i.ApplicationCommandData().Name == "login" {
-					s.InteractionRespond(i.Interaction, loginCommand(i.Interaction))
-				}
-				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: "Pong!",
-					},
-				})
+			if _, ok := defaultCommands[i.ApplicationCommandData().Name]; ok {
+				s.InteractionRespond(i.Interaction, defaultCommands[i.ApplicationCommandData().Name].Function(i.Interaction))
 			}
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Pong!",
+				},
+			})
 		}
 	})
-
 	go func() {
 		c := make(chan os.Signal, 1)
 		signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
