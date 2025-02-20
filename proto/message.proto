@@ -1,11 +1,6 @@
 syntax = "proto3";
 option go_package = "github.com/f4tal-err0r/discord_faas/proto";
 
-message GetContext {
-    string token = 1;
-    string guildID = 2;
-}
-
 message Args {
     string Name = 1;
     string Description = 2;

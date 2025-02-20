@@ -69,13 +69,6 @@ func APIPatchAuth(oauth string, guildid string) bool {
 
 func ContextHandler(w http.ResponseWriter, r *http.Request) {
 
-	req, err := unmarshalRequest(r)
-	if err != nil {
-		log.Println("Error unmarshalling request: ", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
 	cfg, err := config.New()
 	if err != nil {
 		log.Println("Error getting config:", err)
@@ -83,7 +76,15 @@ func ContextHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	guild, err := GetGuildInfo(GetSession(cfg), req.GetGuildID())
+	guildid, ok := contextToken.Load(r.URL.Query().Get("token"))
+	if !ok {
+		http.Error(w, "Invalid token", http.StatusUnauthorized)
+		return
+	} else {
+		contextToken.Delete(r.URL.Query().Get("token"))
+	}
+
+	guild, err := GetGuildInfo(GetSession(cfg), guildid.(string))
 	if err != nil {
 		if strings.Contains(err.Error(), "404") {
 			http.Error(w, "Guild not found", http.StatusNotFound)
@@ -99,7 +100,7 @@ func ContextHandler(w http.ResponseWriter, r *http.Request) {
 
 	ctxPb, err := proto.Marshal(&pb.ContextResp{
 		ClientID:  cfg.Discord.ClientID,
-		GuildID:   req.GetGuildID(),
+		GuildID:   guild.ID,
 		GuildName: guild.Name,
 	})
 	if err != nil {

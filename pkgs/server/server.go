@@ -7,7 +7,10 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"slices"
 	"syscall"
+
+	"github.com/bwmarrin/discordgo"
 
 	"github.com/f4tal-err0r/discord_faas/pkgs/config"
 )
@@ -25,6 +28,25 @@ func Start() {
 
 	dc := GetSession(cfg)
 	log.Print("Bot Started...")
+
+	dc.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		if i.Type == discordgo.InteractionApplicationCommand {
+			if slices.ContainsFunc(defaultCommands, func(c discordgo.ApplicationCommand) bool {
+				return c.Name == i.ApplicationCommandData().Name
+			}) {
+
+				if i.ApplicationCommandData().Name == "login" {
+					s.InteractionRespond(i.Interaction, loginCommand(i.Interaction))
+				}
+				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Content: "Pong!",
+					},
+				})
+			}
+		}
+	})
 
 	go func() {
 		c := make(chan os.Signal, 1)

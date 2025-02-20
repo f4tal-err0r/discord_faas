@@ -1,12 +1,12 @@
 package client
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 
 	pb "github.com/f4tal-err0r/discord_faas/proto"
@@ -16,43 +16,29 @@ import (
 
 //TODO: Serialize future JWT token to server here, verifying ident w/ Oauth token
 
-func NewContext(url string, guildid string) *pb.ContextResp {
-	req, err := http.NewRequest("POST", url+"/api/context", nil)
+func NewContext(uri string, token string) *pb.ContextResp {
+	params := url.Values{}
+	params.Add("token", token)
+	resp, err := http.Get(fmt.Sprintf("%s", uri+"/api/context?"+params.Encode()))
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	// Send the request with headers
-	oauth, err := NewUserAuth().GetToken()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	contextRequest := pb.GetContext{
-		GuildID: guildid,
-		Token:   oauth,
-	}
-
-	// Send protobuf request to server
-
-	msgBody, err := proto.Marshal(&contextRequest)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	//write msgBody to req.Body as protobuf bytes
-	req.Body = io.NopCloser(bytes.NewReader(msgBody))
-	req.Header.Set("Content-Type", "application/x-protobuf")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer resp.Body.Close()
 
 	var ctx pb.ContextResp
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		log.Fatal("Unable to get context: ", resp.Status)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// Decode the response
-	if err := json.NewDecoder(resp.Body).Decode(&ctx); err != nil {
+	if err := proto.Unmarshal(body, &ctx); err != nil {
 		fmt.Print("Unable to decode response")
 		log.Fatal(err)
 	}
@@ -62,18 +48,18 @@ func NewContext(url string, guildid string) *pb.ContextResp {
 		fmt.Print("Unable to load context list")
 		log.Fatal(err)
 	}
-	for _, ctx := range CtxList {
-		ctx.CurrentContext = false
-	}
 
 	ctx.CurrentContext = true
 
 	//Append ctx to ContextList only if guildid is not already present
 	for _, ctxl := range CtxList {
-		if ctxl.GuildID == guildid {
-			fmt.Printf("%s selected\n", ctx.GuildName)
+		if ctxl.GuildID == ctxl.GuildID {
+			fmt.Printf("%s already exists, selected as current context\n", ctx.GuildName)
 			return &ctx
 		}
+	}
+	for _, ctxStore := range CtxList {
+		ctxStore.CurrentContext = false
 	}
 
 	CtxList = append(CtxList, &ctx)
