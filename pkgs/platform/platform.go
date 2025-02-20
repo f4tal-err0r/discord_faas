@@ -54,16 +54,12 @@ func FunctionTemplate(name string, build bool, runtime string) error {
 	}
 
 	cfp, err := os.Getwd()
-	cfp, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("error getting working directory: %v", err)
 	}
 
 	if err = os.MkdirAll(filepath.Join(cfp, name), 0755); err != nil {
-	if err = os.MkdirAll(filepath.Join(cfp, name), 0755); err != nil {
 		return fmt.Errorf("error creating directory: %v", err)
-	} else {
-		fmt.Printf("./%s/\n", name)
 	} else {
 		fmt.Printf("./%s/\n", name)
 	}
@@ -79,32 +75,23 @@ func FunctionTemplate(name string, build bool, runtime string) error {
 			}
 			for _, embedfp := range dirFiles {
 				err := render(fp + "/" + embedfp.Name())
-				err := render(fp + "/" + embedfp.Name())
 				if err != nil {
 					return err
 				}
 			}
 			return nil
 		}
-		data, err := RuntimeFiles.ReadFile(fp)
+
 		data, err := RuntimeFiles.ReadFile(fp)
 		if err != nil {
 			return fmt.Errorf("error reading runtime file: %v", err)
 		}
 		err = os.WriteFile(filepath.Join(cfp, name, filepath.Base(fp)), data, 0644)
-		err = os.WriteFile(filepath.Join(cfp, name, filepath.Base(fp)), data, 0644)
 		if err != nil {
 			return fmt.Errorf("error writing file: %v", err)
 		}
 		fmt.Print("./" + filepath.Join(name, filepath.Base(fp)) + "\n")
-		fmt.Print("./" + filepath.Join(name, filepath.Base(fp)) + "\n")
 		return nil
-	}
-
-	for _, usrfiles := range UserLangDir[runtime] {
-		if err := render(filepath.Join("templates", runtime, usrfiles)); err != nil {
-			return err
-		}
 	}
 
 	for _, usrfiles := range UserLangDir[runtime] {

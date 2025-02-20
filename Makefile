@@ -1,6 +1,5 @@
 # Change these variables as necessary.
 MAIN_PACKAGE_PATH := ./cmd/server
-MAIN_PACKAGE_PATH := ./cmd/server
 BINARY_NAME := dfaas
 EXCLUDE_TEST := "TestContext"
 
