@@ -14,10 +14,9 @@ func init() {
 	rootCmd.AddCommand(context)
 	context.AddCommand(newContext)
 	context.AddCommand(listContexts)
-	context.AddCommand(currentContext)
 	newContext.Flags().StringVarP(&ctxtoken, "token", "t", "", "Token generated via the /login command in discord")
 	newContext.MarkFlagRequired("token")
-	newContext.Flags().StringVarP(&url, "url", "", "", "GuildID of server")
+	newContext.Flags().StringVarP(&url, "url", "", "", "Url of server")
 	newContext.MarkFlagRequired("url")
 }
 

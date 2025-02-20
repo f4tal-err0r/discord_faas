@@ -17,6 +17,15 @@ spec:
       - name: discord-faas-controller
         command: ["/app/faas_server"]
         args: ["server", "start"]
+        env: 
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
         image: ymekuria/discord-faas:dev
         imagePullPolicy: Always
         resources:
@@ -27,6 +36,8 @@ spec:
           - mountPath: /app/config
             name: config
             readOnly: true
+          - mountPath: /workspace
+            name: faas-workspace
         envFrom:
         - secretRef:
             name: discord-faas
@@ -43,3 +54,11 @@ spec:
       resources:
         requests:
           storage: 5Gi
+  - metadata:
+      name: faas-workspace
+    spec:
+      accessModes: [ "ReadWriteOncePod" ]
+      resources:
+        requests:
+          storage: 5Gi
+      

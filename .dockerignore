@@ -1,1 +1,6 @@
 deploy/
+pkgs/client
+skaffold.yaml
+initenv.sh
+Dockerfile
+test.Dockerfile

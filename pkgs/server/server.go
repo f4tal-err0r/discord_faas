@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"slices"
 	"syscall"
 
 	"github.com/bwmarrin/discordgo"
@@ -24,30 +23,39 @@ func Start() {
 		log.Fatalf("ERR: Unable to create config: %v", err)
 	}
 
-	InitServer(cfg)
+	if err := createDirIfNotExist("/opt/dfaas"); err != nil {
+		log.Fatalf("ERR: Unable to create dir %s: %v", cfg.Filestore, err)
+	}
+	db, err := NewDB(cfg)
+	if err != nil {
+		log.Fatalf("ERR: Unable to create db: %v", err)
+	}
+	err = InitDB(db)
+	if err != nil {
+		log.Fatalf("ERR: Unable to create sqlitedb: %v", err)
+	}
 
 	dc := GetSession(cfg)
+
+	if err := RegisterCommands(db, dc); err != nil {
+		log.Printf("ERR: Unable to register commands: %v", err)
+	}
+
 	log.Print("Bot Started...")
 
 	dc.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		if i.Type == discordgo.InteractionApplicationCommand {
-			if slices.ContainsFunc(defaultCommands, func(c discordgo.ApplicationCommand) bool {
-				return c.Name == i.ApplicationCommandData().Name
-			}) {
-
-				if i.ApplicationCommandData().Name == "login" {
-					s.InteractionRespond(i.Interaction, loginCommand(i.Interaction))
-				}
-				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: "Pong!",
-					},
-				})
+			if _, ok := defaultCommands[i.ApplicationCommandData().Name]; ok {
+				s.InteractionRespond(i.Interaction, defaultCommands[i.ApplicationCommandData().Name].Function(i.Interaction))
 			}
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Pong!",
+				},
+			})
 		}
 	})
-
 	go func() {
 		c := make(chan os.Signal, 1)
 		signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
@@ -75,18 +83,4 @@ func createDirIfNotExist(dirPath string) error {
 		return nil
 	}
 	return nil
-}
-
-func InitServer(cfg *config.Config) {
-	if err := createDirIfNotExist("/opt/dfaas"); err != nil {
-		log.Fatalf("ERR: Unable to create dir %s: %v", cfg.Filestore, err)
-	}
-	db, err := NewDB(cfg)
-	if err != nil {
-		log.Fatalf("ERR: Unable to create db: %v", err)
-	}
-	err = InitDB(db)
-	if err != nil {
-		log.Fatalf("ERR: Unable to create sqlitedb: %v", err)
-	}
 }

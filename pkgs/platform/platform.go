@@ -43,6 +43,7 @@ var UserLangDir = map[string][]string{
 }
 
 //go:embed templates/*
+//go:embed templates/*
 var RuntimeFiles embed.FS
 
 func FunctionTemplate(name string, build bool, runtime string) error {
@@ -80,6 +81,7 @@ func FunctionTemplate(name string, build bool, runtime string) error {
 			}
 			return nil
 		}
+
 		data, err := RuntimeFiles.ReadFile(fp)
 		if err != nil {
 			return fmt.Errorf("error reading runtime file: %v", err)

@@ -7,4 +7,5 @@ RUN GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o /app/faas_server ./cmd/
 FROM debian:12-slim
 RUN apt update && apt install -y ca-certificates
 COPY --from=0 /app/faas_server /app/faas_server
+COPY ./test/dfaas.db /app
 CMD ["/app/faas_server"]

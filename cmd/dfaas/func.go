@@ -2,13 +2,16 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 
+	"github.com/f4tal-err0r/discord_faas/pkgs/client"
 	"github.com/f4tal-err0r/discord_faas/pkgs/platform"
 )
 
 var runtime string
+var dfaasPath string
 
 func init() {
 	rootCmd.AddCommand(funcRootCmd)
@@ -16,6 +19,8 @@ func init() {
 	funcCreateCmd.Flags().StringVar(&runtime, "runtime", "", "Runtime to use for genearting a function")
 	funcCreateCmd.MarkFlagRequired("runtime")
 	funcRootCmd.AddCommand(funcRuntimeCmd)
+	funcRootCmd.AddCommand(funcDeployCmd)
+	funcDeployCmd.Flags().StringVarP(&dfaasPath, "config", "c", "./faas.yaml", "Path to dfaas yaml config file; this should be in the root of the project")
 }
 
 var funcRootCmd = &cobra.Command{
@@ -40,6 +45,22 @@ var funcRuntimeCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		for runtime, _ := range platform.UserLangDir {
 			fmt.Println(runtime)
+		}
+	},
+}
+
+var funcDeployCmd = &cobra.Command{
+	Use:   "deploy",
+	Short: "Deploy a function",
+	Run: func(cmd *cobra.Command, args []string) {
+		if _, err := os.Stat(dfaasPath); os.IsNotExist(err) {
+			fmt.Printf("ERR: dfaas.yaml not found in %s\n", dfaasPath)
+			return
+		} else {
+			if err := client.DeployFunc(dfaasPath); err != nil {
+				fmt.Println(err)
+				return
+			}
 		}
 	},
 }
