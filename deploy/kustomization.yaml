@@ -5,4 +5,5 @@ resources:
   - statefulset.yaml
   - secrets_private.yaml
   - certs_private.yaml
+  - service.yaml
 namespace: faas

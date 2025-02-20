@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: discord-faas
+spec:
+  selector:
+    app: discord-faas
+  ports:
+  - port: 80
+    targetPort: 8085
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: discord-faas
+  labels:
+    name: discord-faas
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$1  # Rewrite to strip /dfaas
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: apps.voidnet.dev
+    http:
+      paths:
+      - path: "/dfaas"
+        pathType: Prefix
+        backend:
+          service:
+            name: discord-faas
+            port:
+              number: 80
+      - path: "/dfaas/(.*)"
+        pathType: ImplementationSpecific  # Allows regex matching
+        backend:
+          service:
+            name: discord-faas
+            port:
+              number: 80
+

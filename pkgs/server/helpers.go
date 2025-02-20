@@ -16,10 +16,10 @@ func StrToInt(id string) int64 {
 	return i
 }
 
-// GenerateRandomHash generates a random 16-character hexadecimal hash
+// GenerateRandomHash generates a random 8-character hexadecimal hash
 func GenerateRandomHash() (string, error) {
-	// 8 bytes will result in 16 hex characters
-	bytes := make([]byte, 8)
+	// 4 bytes will result in 8 hex characters
+	bytes := make([]byte, 4)
 	if _, err := rand.Read(bytes); err != nil {
 		return "", err
 	}

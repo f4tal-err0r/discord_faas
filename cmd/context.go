@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var guildid string
+var ctxtoken string
 var url string
 
 func init() {
@@ -15,8 +15,8 @@ func init() {
 	context.AddCommand(newContext)
 	context.AddCommand(listContexts)
 	context.AddCommand(currentContext)
-	newContext.Flags().StringVarP(&guildid, "guildid", "", "", "GuildID of server")
-	newContext.MarkFlagRequired("guildid")
+	newContext.Flags().StringVarP(&ctxtoken, "token", "t", "", "Token generated via the /login command in discord")
+	newContext.MarkFlagRequired("token")
 	newContext.Flags().StringVarP(&url, "url", "", "", "GuildID of server")
 	newContext.MarkFlagRequired("url")
 }
@@ -31,7 +31,7 @@ var newContext = &cobra.Command{
 	Use:   "connect",
 	Short: "Working context of Discord server",
 	Run: func(cmd *cobra.Command, args []string) {
-		client.NewContext(url, guildid)
+		client.NewContext(url, ctxtoken)
 	},
 }
 

@@ -1,27 +1,39 @@
 syntax = "proto3";
 option go_package = "github.com/f4tal-err0r/discord_faas/proto";
 
-message GetContext {
-    string token = 1;
-    string guildID = 2;
+message Args {
+    string Name = 1;
+    string Description = 2;
+    bool Required = 3;
 }
 
-message DeployFunc {
-    bytes func = 1; 
-    string runtime = 2;
+message Commands {
+    string Command = 1;
+    string Description = 2;
+    repeated Args Args = 3;
+}
+
+message BuildFunc {
+    string Name = 1;
+    string Runtime = 2;
+    string GuildID = 3;
+    string Version = 4;
+    string Description = 5;
+    repeated Commands Commands = 6;
 }
 
 message ContextResp {
     string ClientID = 1;
     string GuildID = 2;
     string GuildName = 3;
-    bool CurrentContext = 4;
+    string ServerURL = 4;
+    bool CurrentContext = 5;
 }
 
 message Wrapper {
     string token = 1;
     string guildID = 2;
     oneof Payload {
-        DeployFunc deployfunc = 3;
+        BuildFunc BuildImage = 3;
     }
 }

@@ -49,3 +49,13 @@ func (c *Cache) Delete(k string) {
 	defer c.Unlock()
 	delete(c.Data, k)
 }
+
+func (c *Cache) Cleanup() {
+	c.Lock()
+	defer c.Unlock()
+	for k, v := range c.Data {
+		if time.Now().After(v.ttl) {
+			delete(c.Data, k)
+		}
+	}
+}
