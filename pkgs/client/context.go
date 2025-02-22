@@ -6,7 +6,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
 
 	pb "github.com/f4tal-err0r/discord_faas/proto"
@@ -17,9 +16,14 @@ import (
 //TODO: Serialize future JWT token to server here, verifying ident w/ Oauth token
 
 func NewContext(uri string, token string) *pb.ContextResp {
-	params := url.Values{}
-	params.Add("token", token)
-	resp, err := http.Get(fmt.Sprintf("%s", uri+"/api/context?"+params.Encode()))
+	req, err := http.NewRequest(http.MethodGet, uri+"/api/context", nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token))
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Fatal(err)
 	}

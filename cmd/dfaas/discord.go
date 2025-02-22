@@ -10,7 +10,7 @@ import (
 
 func init() {
 	discordCmd.AddCommand(login)
-	discordCmd.AddCommand(currentUser)
+	// discordCmd.AddCommand(currentUser)
 }
 
 var discordCmd = &cobra.Command{
@@ -31,10 +31,10 @@ var login = &cobra.Command{
 	},
 }
 
-var currentUser = &cobra.Command{
-	Use:   "current-user",
-	Short: "Get the current user",
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("Current User: %s", client.GetCurrentUser().String())
-	},
-}
+// var currentUser = &cobra.Command{
+// 	Use:   "current-user",
+// 	Short: "Get the current user",
+// 	Run: func(cmd *cobra.Command, args []string) {
+// 		fmt.Printf("Current User: %s", client.GetCurrentUser().String())
+// 	},
+// }

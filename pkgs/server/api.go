@@ -76,7 +76,19 @@ func ContextHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	guildid, ok := contextToken.Load(r.URL.Query().Get("token"))
+	token := r.Header.Get("Authorization")
+	if !strings.HasPrefix(token, "Bearer ") {
+		http.Error(w, "Invalid token", http.StatusUnauthorized)
+		return
+	}
+
+	token = strings.TrimPrefix(token, "Bearer ")
+	if token == "" {
+		http.Error(w, "Invalid token", http.StatusUnauthorized)
+		return
+	}
+
+	guildid, ok := contextToken.Load(token)
 	if !ok {
 		http.Error(w, "Invalid token", http.StatusUnauthorized)
 		return
