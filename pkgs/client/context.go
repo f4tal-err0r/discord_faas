@@ -32,13 +32,13 @@ func NewContext(uri string, token string) *pb.ContextResp {
 
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		log.Fatal("Unable to get context: ", resp.Status)
-	}
-
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		log.Fatal("Unable to get context: ", resp.Status, string(body))
 	}
 
 	// Decode the response
@@ -56,8 +56,8 @@ func NewContext(uri string, token string) *pb.ContextResp {
 	ctx.CurrentContext = true
 
 	//Append ctx to ContextList only if guildid is not already present
-	for _, ctxl := range CtxList {
-		if ctxl.GuildID == ctxl.GuildID {
+	for _, c := range CtxList {
+		if c.GuildID == ctx.GuildID {
 			fmt.Printf("%s already exists, selected as current context\n", ctx.GuildName)
 			return &ctx
 		}
