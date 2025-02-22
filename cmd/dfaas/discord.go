@@ -23,8 +23,10 @@ var login = &cobra.Command{
 	Short: "Auth to your Discord Guild",
 	Run: func(cmd *cobra.Command, args []string) {
 		dauth := client.NewUserAuth()
-		if _, err := dauth.StartAuth(); err != nil {
+		if token, err := dauth.StartAuth(); err != nil {
 			log.Fatal(err)
+		} else {
+			fmt.Printf("Auth token: %s\n", token.AccessToken)
 		}
 	},
 }

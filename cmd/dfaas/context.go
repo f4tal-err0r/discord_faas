@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/f4tal-err0r/discord_faas/pkgs/client"
 	"github.com/spf13/cobra"
@@ -46,6 +47,10 @@ var currentContext = &cobra.Command{
 	Use:   "current",
 	Short: "Show Current Context",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("Current Server Context: %v", client.GetCurrentContext().GuildName)
+		ctx, err := client.GetCurrentContext()
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("Current Server Context: %v", ctx.GuildName)
 	},
 }

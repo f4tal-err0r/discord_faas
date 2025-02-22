@@ -4,27 +4,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-
-	"github.com/bwmarrin/discordgo"
 )
-
-func GetCurrentUser() *discordgo.User {
-	token, err := NewUserAuth().GetToken()
-	if err != nil {
-		log.Fatalf("Error getting token: %v", err)
-	}
-	session, err := discordgo.New("Bearer " + token)
-	if err != nil {
-		log.Fatalf("Error creating Discord session: %v", err)
-	}
-
-	user, err := session.User("@me")
-	if err != nil {
-		log.Fatalf("Error getting current user: %v", err)
-	}
-
-	return user
-}
 
 func FetchCacheDir(name string) string {
 	cache, err := os.UserCacheDir()

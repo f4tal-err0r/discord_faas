@@ -124,17 +124,17 @@ func SwitchContext(ctxl []*pb.ContextResp, gid string) {
 	}
 }
 
-func GetCurrentContext() *pb.ContextResp {
+func GetCurrentContext() (*pb.ContextResp, error) {
 	ctxl, err := LoadContextList()
 	if err != nil {
 		log.Fatal(err)
 	}
 	for _, ctx := range ctxl {
 		if ctx.CurrentContext {
-			return ctx
+			return ctx, nil
 		}
 	}
-	return nil
+	return nil, fmt.Errorf("no current context found")
 }
 
 func ListContexts() {
