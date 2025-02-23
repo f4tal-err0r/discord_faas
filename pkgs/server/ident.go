@@ -16,10 +16,10 @@ type OAuth2Response struct {
 }
 
 type GuildMember struct {
-	User     OAuth2Response `json:"user"`
-	Nickname string         `json:"nick"`
-	Roles    []string       `json:"roles"`
-	GuildID  string         `json:"id"`
+	User        OAuth2Response `json:"user"`
+	Nickname    string         `json:"nick"`
+	Roles       []string       `json:"roles"`
+	Permissions int64          `json:"permissions"`
 }
 
 var GuildCache = cache.New()

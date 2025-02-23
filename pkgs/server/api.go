@@ -131,6 +131,11 @@ func AuthHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if (gm.Permissions & 1 << 3) != 0 {
+		http.Error(w, "Missing permissions", http.StatusForbidden)
+		return
+	}
+
 	jwt, err := jwtsvc.CreateToken(Claims{
 		UserID:  gm.User.ID,
 		GuildID: guildid,
