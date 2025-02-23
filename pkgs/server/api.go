@@ -3,11 +3,12 @@ package server
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
+	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"google.golang.org/protobuf/proto"
@@ -49,22 +50,25 @@ func Router() *mux.Router {
 	router := mux.NewRouter()
 
 	router.HandleFunc("/api/deploy", wsWrapper(DeployHandler))
-	router.Handle("/api/context", http.HandlerFunc(ContextHandler))
+	router.HandleFunc("/api/context", ContextHandler)
+	router.HandleFunc("/api/context/auth", AuthHandler)
+	router.HandleFunc("/api/context/decode", func(w http.ResponseWriter, r *http.Request) {
+		token := getTokenFromHeader(r)
+		if token == "" {
+			http.Error(w, "Invalid token", http.StatusUnauthorized)
+			return
+		}
+
+		claims, err := jwtsvc.ParseToken(token)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Write([]byte(fmt.Sprintf("%+v", claims)))
+
+	})
 	return router
-}
-
-func APIPatchAuth(oauth string, guildid string) bool {
-
-	//Check User exists in guild
-	_, err := FetchGuildMember(oauth, guildid)
-	if err != nil {
-		log.Print(err)
-		return false
-	}
-
-	//TODO: This needs to also check GetRolesByGuildID to see if the user has the correct role
-
-	return true
 }
 
 func ContextHandler(w http.ResponseWriter, r *http.Request) {
@@ -76,7 +80,9 @@ func ContextHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	guildid, ok := contextToken.Load(r.URL.Query().Get("token"))
+	token := r.Header.Get("Token")
+
+	guildid, ok := contextToken.Load(token)
 	if !ok {
 		http.Error(w, "Invalid token", http.StatusUnauthorized)
 		return
@@ -84,7 +90,7 @@ func ContextHandler(w http.ResponseWriter, r *http.Request) {
 		contextToken.Delete(r.URL.Query().Get("token"))
 	}
 
-	guild, err := GetGuildInfo(GetSession(cfg), guildid.(string))
+	guild, err := GetGuildInfo(dsession, guildid.(string))
 	if err != nil {
 		if strings.Contains(err.Error(), "404") {
 			http.Error(w, "Guild not found", http.StatusNotFound)
@@ -111,6 +117,35 @@ func ContextHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(ctxPb)
 }
 
+func AuthHandler(w http.ResponseWriter, r *http.Request) {
+	token := getTokenFromHeader(r)
+	if token == "" {
+		http.Error(w, "Invalid token", http.StatusUnauthorized)
+	}
+
+	guildid := r.Header.Get("GuildID")
+
+	gm, err := FetchGuildMember(token, guildid)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	jwt, err := jwtsvc.CreateToken(Claims{
+		UserID:  gm.User.ID,
+		GuildID: guildid,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(6 * time.Hour)),
+		},
+	})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Write([]byte(jwt))
+}
+
 func DeployHandler(conn *websocket.Conn, r *http.Request) {
 	// Recieve a file from the request
 	_, p, err := conn.ReadMessage()
@@ -125,16 +160,30 @@ func DeployHandler(conn *websocket.Conn, r *http.Request) {
 	_ = bytes.NewReader(p)
 }
 
-func unmarshalRequest(r *http.Request) (*pb.Wrapper, error) {
-	wrapper := new(pb.Wrapper)
+// func unmarshalRequest(r *http.Request) (*pb.Wrapper, error) {
+// 	wrapper := new(pb.Wrapper)
 
-	data, err := io.ReadAll(r.Body)
-	if err != nil {
-		return nil, fmt.Errorf("invalid request: %w", err)
-	}
-	if err := proto.Unmarshal(data, wrapper); err != nil {
-		return nil, fmt.Errorf("invalid request: %w", err)
+// 	data, err := io.ReadAll(r.Body)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("invalid request: %w", err)
+// 	}
+// 	if err := proto.Unmarshal(data, wrapper); err != nil {
+// 		return nil, fmt.Errorf("invalid request: %w", err)
+// 	}
+
+// 	return wrapper, nil
+// }
+
+func getTokenFromHeader(r *http.Request) string {
+	token := r.Header.Get("Authorization")
+	if !strings.HasPrefix(token, "Bearer ") {
+		return ""
 	}
 
-	return wrapper, nil
+	token = strings.TrimPrefix(token, "Bearer ")
+	if token == "" {
+		return ""
+	}
+
+	return token
 }

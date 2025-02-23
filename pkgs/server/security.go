@@ -24,14 +24,14 @@ type Claims struct {
 
 // If no keypair exists, generate a new one
 func NewJWT() *JWTService {
-	pkFile, err := os.ReadFile("/app/certs/private.key")
+	pkFile, err := os.ReadFile("/app/certs/private.pem")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("JWT keypair not found", err)
 	}
 	KeyBlock, _ := pem.Decode(pkFile)
 	privateKey, err := x509.ParsePKCS1PrivateKey(KeyBlock.Bytes)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Unable to parse private key", err)
 	}
 	publicKey := &privateKey.PublicKey
 	return &JWTService{privateKey: privateKey, PublicKey: publicKey}
@@ -57,4 +57,21 @@ func (t *JWTService) VerifyToken(tokenString string) error {
 		return t.PublicKey, nil
 	})
 	return err
+}
+
+func (t *JWTService) ParseToken(tokenString string) (*Claims, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
+			return nil, jwt.ErrSignatureInvalid
+		}
+		return t.PublicKey, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	claims, ok := token.Claims.(*Claims)
+	if !ok {
+		return nil, err
+	}
+	return claims, nil
 }

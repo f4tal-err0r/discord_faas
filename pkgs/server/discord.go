@@ -3,7 +3,6 @@ package server
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"sync"
 
 	"github.com/bwmarrin/discordgo"
@@ -15,6 +14,7 @@ var (
 	defaultCommands = map[string]DefaultCommandData{
 		"help": {
 			Description: "Information around Discord FaaS",
+			Function:    helpCommand,
 		},
 		"login": {
 			Description: "Generate a login token for the command line client",
@@ -70,24 +70,6 @@ func RegisterCommands(db *sql.DB, session *discordgo.Session) error {
 	return nil
 }
 
-func GetSession(cfg *config.Config) *discordgo.Session {
-	dc, err := discordgo.New("Bot " + cfg.Discord.Token)
-	if err != nil {
-		log.Fatalf("ERR: %s", err)
-	}
-	db, err := NewDB(cfg)
-	if err != nil {
-		log.Fatalf("ERR: Unable to create db: %v", err)
-	}
-	if err := dc.Open(); err != nil {
-		log.Fatal(fmt.Errorf("websocket error: %v", err))
-	}
-	if err := RegisterCommands(db, dc); err != nil {
-		log.Fatalf("ERR: %s", err)
-	}
-	return dc
-}
-
 func loginCommand(i *discordgo.Interaction) *discordgo.InteractionResponse {
 
 	message := &discordgo.InteractionResponse{
@@ -115,7 +97,7 @@ func loginCommand(i *discordgo.Interaction) *discordgo.InteractionResponse {
 	return message
 }
 
-func helpCommand(i *discordgo.Interaction) *discordgo.InteractionResponse {
+func helpCommand(_ *discordgo.Interaction) *discordgo.InteractionResponse {
 	return &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{

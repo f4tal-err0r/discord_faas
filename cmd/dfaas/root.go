@@ -7,10 +7,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func init() {
-	rootCmd.AddCommand(discordCmd)
-}
-
 var rootCmd = &cobra.Command{
 	Use:   os.Args[0],
 	Short: "Discord Functions-as-a-Service",

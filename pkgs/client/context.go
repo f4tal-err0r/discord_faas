@@ -6,7 +6,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
 
 	pb "github.com/f4tal-err0r/discord_faas/proto"
@@ -17,9 +16,14 @@ import (
 //TODO: Serialize future JWT token to server here, verifying ident w/ Oauth token
 
 func NewContext(uri string, token string) *pb.ContextResp {
-	params := url.Values{}
-	params.Add("token", token)
-	resp, err := http.Get(fmt.Sprintf("%s", uri+"/api/context?"+params.Encode()))
+	req, err := http.NewRequest(http.MethodGet, uri+"/api/context", nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	req.Header.Add("Token", token)
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -28,13 +32,13 @@ func NewContext(uri string, token string) *pb.ContextResp {
 
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		log.Fatal("Unable to get context: ", resp.Status)
-	}
-
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		log.Fatal("Unable to get context: ", resp.Status, string(body))
 	}
 
 	// Decode the response
@@ -50,10 +54,11 @@ func NewContext(uri string, token string) *pb.ContextResp {
 	}
 
 	ctx.CurrentContext = true
+	ctx.ServerURL = uri
 
 	//Append ctx to ContextList only if guildid is not already present
-	for _, ctxl := range CtxList {
-		if ctxl.GuildID == ctxl.GuildID {
+	for _, c := range CtxList {
+		if c.GuildID == ctx.GuildID {
 			fmt.Printf("%s already exists, selected as current context\n", ctx.GuildName)
 			return &ctx
 		}
@@ -124,17 +129,30 @@ func SwitchContext(ctxl []*pb.ContextResp, gid string) {
 	}
 }
 
-func GetCurrentContext() *pb.ContextResp {
+func GetCurrentContext() (*pb.ContextResp, error) {
 	ctxl, err := LoadContextList()
 	if err != nil {
 		log.Fatal(err)
 	}
 	for _, ctx := range ctxl {
 		if ctx.CurrentContext {
-			return ctx
+			return ctx, nil
 		}
 	}
-	return nil
+	return nil, fmt.Errorf("no current context found")
+}
+
+func UpdateContextToken(ctx *pb.ContextResp) error {
+	ctxl, err := LoadContextList()
+	if err != nil {
+		return err
+	}
+	for _, c := range ctxl {
+		if c.GuildID == ctx.GuildID {
+			c.JWToken = ctx.JWToken
+		}
+	}
+	return SerializeContextList(ctxl)
 }
 
 func ListContexts() {
@@ -156,6 +174,46 @@ func ListContexts() {
 	if err != nil {
 		log.Fatalf("failed to select context: %v", err)
 	}
+}
+
+func AuthContent(ctx *pb.ContextResp) error {
+	oauth := NewUserAuth()
+
+	oauthToken, err := oauth.StartAuth()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	req, err := http.NewRequest(http.MethodGet, ctx.ServerURL+"/api/context/auth", nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", oauthToken.AccessToken))
+	req.Header.Add("GuildID", ctx.GuildID)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Fatal("err while authenticating to context: ", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		log.Fatal("Unable to authenticate to context: ", resp.Status)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal("Unable to read response body: ", err)
+	}
+
+	ctx.JWToken = string(body)
+
+	if err := UpdateContextToken(ctx); err != nil {
+		log.Fatal("Unable to update context token: ", err)
+	}
+
+	return nil
+
 }
 
 func createFileIfNotExists(filePath string) (*os.File, error) {

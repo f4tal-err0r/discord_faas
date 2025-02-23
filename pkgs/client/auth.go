@@ -5,12 +5,9 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"os"
-	"time"
 
 	"github.com/pkg/browser"
 	"golang.org/x/oauth2"
@@ -24,7 +21,15 @@ type DiscordUserAuth struct {
 }
 
 func NewUserAuth(opts ...func(*DiscordUserAuth)) *DiscordUserAuth {
-	context := GetCurrentContext()
+	var userauth DiscordUserAuth
+	context, err := GetCurrentContext()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, opt := range opts {
+		opt(&userauth)
+	}
 	oauthCfg := &oauth2.Config{
 		ClientID:    context.ClientID,
 		RedirectURL: "http://localhost:8085/callback",
@@ -35,11 +40,13 @@ func NewUserAuth(opts ...func(*DiscordUserAuth)) *DiscordUserAuth {
 		},
 	}
 
-	return &DiscordUserAuth{
+	userauth = DiscordUserAuth{
 		Token:    nil,
 		Config:   oauthCfg,
 		Filepath: FetchCacheDir("auth"),
 	}
+
+	return &userauth
 }
 
 func WithToken(token *oauth2.Token) func(*DiscordUserAuth) {
@@ -63,7 +70,7 @@ func generateCodeChallenge(codeVerifier string) (string, error) {
 	return base64.RawURLEncoding.EncodeToString(h.Sum(nil)), nil
 }
 
-func (d *DiscordUserAuth) StartAuth() (<-chan *oauth2.Token, error) {
+func (d *DiscordUserAuth) StartAuth() (*oauth2.Token, error) {
 	tokenChan := make(chan *oauth2.Token)
 	state := generateRand()
 	codeVerifier := generateRand()
@@ -106,55 +113,5 @@ func (d *DiscordUserAuth) StartAuth() (<-chan *oauth2.Token, error) {
 	// Wait for the auth flow to complete and return the token
 	token := <-tokenChan
 
-	// Save the token to disk
-	if err := d.saveToken(token); err != nil {
-		return nil, fmt.Errorf("save token: %w", err)
-	}
-
-	return tokenChan, nil
-}
-
-func (d *DiscordUserAuth) GetToken() (string, error) {
-
-	f, err := os.Open(d.Filepath)
-	if err != nil {
-		tokench, err := d.StartAuth()
-		if err != nil {
-			log.Fatalf("\nfailed to auth to Discord: %v", err)
-		}
-		token := <-tokench
-		d.Token = token
-	}
-	defer f.Close()
-
-	err = json.NewDecoder(f).Decode(&d.Token)
-	if err != nil {
-		return "", err
-	}
-
-	if d.Token.Expiry.Before(time.Now()) {
-		if tokenSource, err := d.RefreshToken(d.Token).Token(); err != nil {
-			d.Token = tokenSource
-			if err := d.saveToken(d.Token); err != nil {
-				return "", fmt.Errorf("save token: %w", err)
-			}
-		}
-	}
-
-	return d.Token.AccessToken, nil
-}
-
-// RefreshToken refreshes the Oauth2 token
-func (d *DiscordUserAuth) RefreshToken(token *oauth2.Token) oauth2.TokenSource {
-	return d.Config.TokenSource(context.Background(), token)
-}
-
-func (d *DiscordUserAuth) saveToken(token *oauth2.Token) error {
-	f, err := os.Create(d.Filepath)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	return json.NewEncoder(f).Encode(token)
+	return token, nil
 }

@@ -11,3 +11,4 @@ test/
 **/**pb.*
 .vscode/
 test.Dockerfile
+*.pem
