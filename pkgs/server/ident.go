@@ -11,20 +11,15 @@ import (
 )
 
 type OAuth2Response struct {
-	ID            string `json:"id"`
-	Username      string `json:"username"`
-	Discriminator string `json:"discriminator"`
-	Avatar        string `json:"avatar"`
+	ID       string `json:"id"`
+	Username string `json:"username"`
 }
 
 type GuildMember struct {
-	User         OAuth2Response `json:"user"`
-	Nickname     string         `json:"nick"`
-	Roles        []string       `json:"roles"`
-	JoinedAt     string         `json:"joined_at"`
-	PremiumSince string         `json:"premium_since"`
-	Deaf         bool           `json:"deaf"`
-	Mute         bool           `json:"mute"`
+	User     OAuth2Response `json:"user"`
+	Nickname string         `json:"nick"`
+	Roles    []string       `json:"roles"`
+	GuildID  string         `json:"id"`
 }
 
 var GuildCache = cache.New()

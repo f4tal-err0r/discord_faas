@@ -15,6 +15,8 @@ func init() {
 	rootCmd.AddCommand(context)
 	context.AddCommand(newContext)
 	context.AddCommand(listContexts)
+	context.AddCommand(currentContext)
+	context.AddCommand(authContext)
 	newContext.Flags().StringVarP(&ctxtoken, "token", "t", "", "Token generated via the /login command in discord")
 	newContext.MarkFlagRequired("token")
 	newContext.Flags().StringVarP(&url, "url", "", "", "Url of server")
@@ -28,8 +30,8 @@ var context = &cobra.Command{
 }
 
 var newContext = &cobra.Command{
-	Use:   "connect",
-	Short: "Working context of Discord server",
+	Use:   "create",
+	Short: "Create new context for Discord server",
 	Run: func(cmd *cobra.Command, args []string) {
 		client.NewContext(url, ctxtoken)
 	},
@@ -52,5 +54,17 @@ var currentContext = &cobra.Command{
 			log.Fatal(err)
 		}
 		fmt.Printf("Current Server Context: %v", ctx.GuildName)
+	},
+}
+
+var authContext = &cobra.Command{
+	Use:   "auth",
+	Short: "Authenticate to context",
+	Run: func(cmd *cobra.Command, args []string) {
+		ctx, err := client.GetCurrentContext()
+		if err != nil {
+			log.Fatal(err)
+		}
+		client.AuthContent(ctx)
 	},
 }

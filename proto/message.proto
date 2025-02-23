@@ -33,15 +33,13 @@ message ContextResp {
     string GuildName = 3;
     string ServerURL = 4;
     bool CurrentContext = 5;
-    string ServerURL = 4;
-    bool CurrentContext = 5;
+    string JWToken = 6;
 }
 
 message Wrapper {
     string token = 1;
     string guildID = 2;
     oneof Payload {
-        BuildFunc BuildImage = 3;
         BuildFunc BuildImage = 3;
     }
 }

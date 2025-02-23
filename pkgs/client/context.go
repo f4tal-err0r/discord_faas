@@ -21,7 +21,7 @@ func NewContext(uri string, token string) *pb.ContextResp {
 		log.Fatal(err)
 	}
 
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token))
+	req.Header.Add("Token", token)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -54,6 +54,7 @@ func NewContext(uri string, token string) *pb.ContextResp {
 	}
 
 	ctx.CurrentContext = true
+	ctx.ServerURL = uri
 
 	//Append ctx to ContextList only if guildid is not already present
 	for _, c := range CtxList {
@@ -141,6 +142,19 @@ func GetCurrentContext() (*pb.ContextResp, error) {
 	return nil, fmt.Errorf("no current context found")
 }
 
+func UpdateContextToken(ctx *pb.ContextResp) error {
+	ctxl, err := LoadContextList()
+	if err != nil {
+		return err
+	}
+	for _, c := range ctxl {
+		if c.GuildID == ctx.GuildID {
+			c.JWToken = ctx.JWToken
+		}
+	}
+	return SerializeContextList(ctxl)
+}
+
 func ListContexts() {
 	ContextList, err := LoadContextList()
 	if err != nil {
@@ -160,6 +174,46 @@ func ListContexts() {
 	if err != nil {
 		log.Fatalf("failed to select context: %v", err)
 	}
+}
+
+func AuthContent(ctx *pb.ContextResp) error {
+	oauth := NewUserAuth()
+
+	oauthToken, err := oauth.StartAuth()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	req, err := http.NewRequest(http.MethodGet, ctx.ServerURL+"/api/context/auth", nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", oauthToken.AccessToken))
+	req.Header.Add("GuildID", ctx.GuildID)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Fatal("err while authenticating to context: ", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		log.Fatal("Unable to authenticate to context: ", resp.Status)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal("Unable to read response body: ", err)
+	}
+
+	ctx.JWToken = string(body)
+
+	if err := UpdateContextToken(ctx); err != nil {
+		log.Fatal("Unable to update context token: ", err)
+	}
+
+	return nil
+
 }
 
 func createFileIfNotExists(filePath string) (*os.File, error) {
