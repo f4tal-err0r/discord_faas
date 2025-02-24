@@ -1,4 +1,4 @@
-package server
+package security
 
 import (
 	"crypto/rsa"
@@ -22,8 +22,7 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-// If no keypair exists, generate a new one
-func NewJWT() *JWTService {
+func NewJWT() (*JWTService, error) {
 	pkFile, err := os.ReadFile("/app/certs/private.pem")
 	if err != nil {
 		log.Fatal("JWT keypair not found", err)
@@ -34,7 +33,7 @@ func NewJWT() *JWTService {
 		log.Fatal("Unable to parse private key", err)
 	}
 	publicKey := &privateKey.PublicKey
-	return &JWTService{privateKey: privateKey, PublicKey: publicKey}
+	return &JWTService{privateKey: privateKey, PublicKey: publicKey}, nil
 }
 
 // Create new JWT token

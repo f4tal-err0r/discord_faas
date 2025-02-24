@@ -1,4 +1,4 @@
-package server
+package api
 
 import (
 	"bytes"
@@ -6,8 +6,10 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/bwmarrin/discordgo"
 	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
@@ -16,6 +18,8 @@ import (
 	pb "github.com/f4tal-err0r/discord_faas/proto"
 
 	"github.com/f4tal-err0r/discord_faas/pkgs/config"
+	"github.com/f4tal-err0r/discord_faas/pkgs/discord"
+	"github.com/f4tal-err0r/discord_faas/pkgs/security"
 )
 
 // Define an upgrader
@@ -29,6 +33,10 @@ var upgrader = websocket.Upgrader{
 
 // WebSocket handler type
 type wsHandler func(conn *websocket.Conn, r *http.Request)
+
+type Router struct {
+	Router *mux.Router
+}
 
 // Middleware to upgrade all connections to WebSocket
 func wsWrapper(next wsHandler) http.HandlerFunc {
@@ -46,12 +54,16 @@ func wsWrapper(next wsHandler) http.HandlerFunc {
 	}
 }
 
-func Router() *mux.Router {
+func NewRouter(bot *discord.Client, jwtsvc *security.JWTService) *Router {
 	router := mux.NewRouter()
 
 	router.HandleFunc("/api/deploy", wsWrapper(DeployHandler))
-	router.HandleFunc("/api/context", ContextHandler)
-	router.HandleFunc("/api/context/auth", AuthHandler)
+	router.HandleFunc("/api/context", func(w http.ResponseWriter, r *http.Request) {
+		ContextHandler(w, r, bot.ContextTokenCache, bot.Session)
+	})
+	router.HandleFunc("/api/context/auth", func(w http.ResponseWriter, r *http.Request) {
+		AuthHandler(w, r, jwtsvc)
+	})
 	router.HandleFunc("/api/context/decode", func(w http.ResponseWriter, r *http.Request) {
 		token := getTokenFromHeader(r)
 		if token == "" {
@@ -68,10 +80,10 @@ func Router() *mux.Router {
 		w.Write([]byte(fmt.Sprintf("%+v", claims)))
 
 	})
-	return router
+	return &Router{Router: router}
 }
 
-func ContextHandler(w http.ResponseWriter, r *http.Request) {
+func ContextHandler(w http.ResponseWriter, r *http.Request, contextTokenCache *sync.Map, dsession *discordgo.Session) {
 
 	cfg, err := config.New()
 	if err != nil {
@@ -82,15 +94,19 @@ func ContextHandler(w http.ResponseWriter, r *http.Request) {
 
 	token := r.Header.Get("Token")
 
-	guildid, ok := contextToken.Load(token)
+	guildid, ok := contextTokenCache.Load(token)
 	if !ok {
 		http.Error(w, "Invalid token", http.StatusUnauthorized)
 		return
 	} else {
-		contextToken.Delete(r.URL.Query().Get("token"))
+		contextTokenCache.Delete(r.URL.Query().Get("token"))
 	}
 
-	guild, err := GetGuildInfo(dsession, guildid.(string))
+	guild, err := dsession.Guild(guildid.(string))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	if err != nil {
 		if strings.Contains(err.Error(), "404") {
 			http.Error(w, "Guild not found", http.StatusNotFound)
@@ -117,7 +133,7 @@ func ContextHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(ctxPb)
 }
 
-func AuthHandler(w http.ResponseWriter, r *http.Request) {
+func AuthHandler(w http.ResponseWriter, r *http.Request, jwtsvc *security.JWTService) {
 	token := getTokenFromHeader(r)
 	if token == "" {
 		http.Error(w, "Invalid token", http.StatusUnauthorized)
@@ -125,13 +141,18 @@ func AuthHandler(w http.ResponseWriter, r *http.Request) {
 
 	guildid := r.Header.Get("GuildID")
 
-	gm, err := FetchGuildMember(token, guildid)
+	gm, err := discord.IdentGuildMember(token, guildid)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	jwt, err := jwtsvc.CreateToken(Claims{
+	if (gm.Permissions & 1 << 3) != 0 {
+		http.Error(w, "Missing permissions", http.StatusForbidden)
+		return
+	}
+
+	jwt, err := jwtsvc.CreateToken(security.Claims{
 		UserID:  gm.User.ID,
 		GuildID: guildid,
 		RegisteredClaims: jwt.RegisteredClaims{

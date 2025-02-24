@@ -12,7 +12,7 @@ import (
 	proto "github.com/f4tal-err0r/discord_faas/proto"
 )
 
-func createKanikoJob(buildImage proto.BuildFunc) *batchv1.Job {
+func createKanikoJob(buildImage *proto.BuildFunc) *batchv1.Job {
 	registryUrl := fmt.Sprintf("%s.%s.internal", os.Getenv("POD_NAME"), os.Getenv("POD_NAMESPACE"))
 
 	return &batchv1.Job{
