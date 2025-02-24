@@ -1,13 +1,9 @@
-package server
+package discord
 
 import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
-
-	"github.com/bwmarrin/discordgo"
-	"github.com/f4tal-err0r/discord_faas/pkgs/cache"
 )
 
 type OAuth2Response struct {
@@ -21,9 +17,6 @@ type GuildMember struct {
 	Roles       []string       `json:"roles"`
 	Permissions int64          `json:"permissions"`
 }
-
-var GuildCache = cache.New()
-var GuildMemberCache = cache.New()
 
 func FetchGuildMember(token, gid string) (*GuildMember, error) {
 	endpoint := fmt.Sprintf("https://discord.com/api/users/@me/guilds/%s/member", gid)
@@ -51,37 +44,4 @@ func FetchGuildMember(token, gid string) (*GuildMember, error) {
 	}
 
 	return &member, nil
-}
-
-func GetGuildInfo(session *discordgo.Session, gid string) (*discordgo.Guild, error) {
-	if v, _ := GuildCache.Get(gid); v != nil {
-		return v.(*discordgo.Guild), nil
-	}
-	guild, err := session.Guild(gid)
-	if err != nil {
-		return nil, err
-	}
-	GuildCache.Set(gid, guild, (4 * time.Hour))
-	return guild, nil
-}
-
-func GetDefaultChannel(session *discordgo.Session, guildID string) (*discordgo.Channel, error) {
-	channels, err := session.GuildChannels(guildID)
-	if err != nil {
-		return nil, err
-	}
-
-	var defaultChannel *discordgo.Channel
-	for _, channel := range channels {
-		if channel.Type == discordgo.ChannelTypeGuildText {
-			if defaultChannel == nil || channel.Position < defaultChannel.Position {
-				defaultChannel = channel
-			}
-		}
-	}
-
-	if defaultChannel == nil {
-		return nil, fmt.Errorf("no default channel found")
-	}
-	return defaultChannel, nil
 }

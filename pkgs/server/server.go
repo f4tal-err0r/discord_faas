@@ -1,7 +1,6 @@
 package server
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
@@ -9,79 +8,74 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/bwmarrin/discordgo"
-
+	"github.com/f4tal-err0r/discord_faas/pkgs/api"
 	"github.com/f4tal-err0r/discord_faas/pkgs/config"
+	"github.com/f4tal-err0r/discord_faas/pkgs/db"
+	"github.com/f4tal-err0r/discord_faas/pkgs/discord"
+	"github.com/f4tal-err0r/discord_faas/pkgs/security"
 )
 
-var (
-	cfg      *config.Config
-	db       *sql.DB
-	dsession *discordgo.Session
-	jwtsvc   *JWTService
-)
+type Handler struct {
+	Db     *db.DBHandler
+	Bot    *discord.Client
+	Cfg    *config.Config
+	Jwtsvc *security.JWTService
+}
 
-func Start() {
-	var err error
-	cfg, err = config.New()
-	if err != nil {
-		log.Fatalf("ERR: Unable to create config: %v", err)
-	}
-
+func NewHandler(cfg *config.Config) (*Handler, error) {
 	if err := createDirIfNotExist("/opt/dfaas"); err != nil {
-		log.Fatalf("ERR: Unable to create dir %s: %v", cfg.Filestore, err)
-	}
-	db, err = NewDB(cfg)
-	if err != nil {
-		log.Fatalf("ERR: Unable to create db: %v", err)
-	}
-	err = InitDB(db)
-	if err != nil {
-		log.Fatalf("ERR: Unable to create sqlitedb: %v", err)
+		return nil, fmt.Errorf("unable to create dir %s: %w", cfg.Filestore, err)
 	}
 
-	dsession, err = discordgo.New("Bot " + cfg.Discord.Token)
+	dbc, err := db.NewDB(cfg)
 	if err != nil {
-		log.Fatalf("ERR: %s", err)
+		return nil, fmt.Errorf("unable to create db: %w", err)
 	}
 
-	if err := dsession.Open(); err != nil {
+	if err := dbc.InitDB(); err != nil {
+		return nil, fmt.Errorf("unable to create sqlitedb: %w", err)
+	}
+	ds, err := discord.NewClient(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create discord client: %w", err)
+	}
+
+	jwtsvc, err := security.NewJWT()
+	if err != nil {
+		return nil, fmt.Errorf("unable to create jwt service: %w", err)
+	}
+
+	return &Handler{
+		Db:     dbc,
+		Bot:    ds,
+		Cfg:    cfg,
+		Jwtsvc: jwtsvc,
+	}, nil
+}
+
+func (h *Handler) Start() {
+	if err := h.Bot.Session.Open(); err != nil {
 		log.Fatalf("ERR: Unable to open discord session: %v", err)
 	}
 
-	if err := RegisterCommands(db, dsession); err != nil {
+	if err := h.Bot.RegisterCommands(h.Db); err != nil {
 		log.Printf("ERR: Unable to register commands: %v", err)
 	}
 
 	log.Print("Bot Started...")
 
-	dsession.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-		if i.Type == discordgo.InteractionApplicationCommand {
-			if _, ok := defaultCommands[i.ApplicationCommandData().Name]; ok {
-				s.InteractionRespond(i.Interaction, defaultCommands[i.ApplicationCommandData().Name].Function(i.Interaction))
-			}
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: "Pong!",
-				},
-			})
-		}
-	})
 	go func() {
 		c := make(chan os.Signal, 1)
 		signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 		<-c
 
-		dsession.Close()
+		h.Bot.Session.Close()
 		log.Print("Bot Shutdown.")
 	}()
 
-	jwtsvc = NewJWT()
-
 	// start api server
-	router := Router()
-	log.Fatal(http.ListenAndServe(":8085", router))
+	apiHandler := api.NewRouter(h.Bot, h.Jwtsvc)
+	log.Fatal(http.ListenAndServe(":8085", apiHandler.Router))
 }
 
 func createDirIfNotExist(dirPath string) error {
