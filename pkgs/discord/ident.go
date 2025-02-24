@@ -18,7 +18,7 @@ type GuildMember struct {
 	Permissions int64          `json:"permissions"`
 }
 
-func FetchGuildMember(token, gid string) (*GuildMember, error) {
+func IdentGuildMember(token, gid string) (*GuildMember, error) {
 	endpoint := fmt.Sprintf("https://discord.com/api/users/@me/guilds/%s/member", gid)
 
 	req, err := http.NewRequest(http.MethodGet, endpoint, nil)

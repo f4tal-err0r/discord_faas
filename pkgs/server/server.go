@@ -33,7 +33,7 @@ func NewHandler(cfg *config.Config) (*Handler, error) {
 	}
 
 	if err := dbc.InitDB(); err != nil {
-		return nil, fmt.Errorf("unable to create sqlitedb: %w", err)
+		return nil, fmt.Errorf("unable to create db schema: %w", err)
 	}
 	ds, err := discord.NewClient(cfg)
 	if err != nil {
@@ -54,7 +54,9 @@ func NewHandler(cfg *config.Config) (*Handler, error) {
 }
 
 func (h *Handler) Start() {
-	if err := h.Bot.Session.Open(); err != nil {
+
+	err := h.Bot.Session.Open()
+	if err != nil {
 		log.Fatalf("ERR: Unable to open discord session: %v", err)
 	}
 

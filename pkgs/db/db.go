@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/f4tal-err0r/discord_faas/pkgs/config"
+	_ "modernc.org/sqlite"
 )
 
 // GuildMetadata represents a row in the GuildMetadata table
@@ -75,7 +76,7 @@ func (h *DBHandler) InitDB() error {
 			guildid INTEGER PRIMARY KEY,
 			source TEXT NOT NULL,
 			name TEXT NOT NULL CHECK (length(name) > 0),
-			owner TEXT NOT NULL,
+			owner TEXT NOT NULL
 		);
 
 		CREATE INDEX idx_guild_name ON GuildMetadata(name);
@@ -104,7 +105,6 @@ func (h *DBHandler) InitDB() error {
 			command TEXT NOT NULL CHECK (length(command) > 0),
 			description TEXT NOT NULL,
 			guildid INTEGER NOT NULL,
-			description TEXT,
 			FOREIGN KEY (guildid) REFERENCES GuildMetadata(guildid) ON DELETE CASCADE
 		);
 

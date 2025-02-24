@@ -29,6 +29,9 @@ var startCmd = &cobra.Command{
 		}
 
 		s, err := server.NewHandler(cfg)
+		if err != nil {
+			log.Fatalf("failed to create server: %v", err)
+		}
 		s.Start()
 	},
 }
