@@ -38,37 +38,29 @@ type Labels struct {
 }
 
 var UserLangDir = map[string][]string{
-	"golang": []string{"function/*"},
-	"ruby":   []string{"function.rb", "content_pb.rb"},
+	"golang": {"function/"},
+	"ruby":   {"function.rb", "content_pb.rb"},
 }
 
 //go:embed templates/*
-//go:embed templates/*
 var RuntimeFiles embed.FS
 
-func FunctionTemplate(name string, build bool, runtime string) error {
+func FunctionTemplate(dir string, build bool, runtime string) error {
 	runtimeList := maps.Keys(UserLangDir)
 
 	if !slices.Contains(runtimeList, runtime) {
 		return fmt.Errorf("invalid runtime: %s", runtime)
 	}
 
-	cfp, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("error getting working directory: %v", err)
-	}
-
-	if err = os.MkdirAll(filepath.Join(cfp, name), 0755); err != nil {
+	if err := os.MkdirAll(dir, 0755); err != nil {
 		return fmt.Errorf("error creating directory: %v", err)
-	} else {
-		fmt.Printf("./%s/\n", name)
 	}
 
 	var render func(string) error
 
 	render = func(fp string) error {
-		if strings.HasSuffix(fp, "/*") {
-			fp = strings.TrimSuffix(fp, "/*")
+		if strings.HasSuffix(fp, "/") {
+			fp = strings.TrimSuffix(fp, "/")
 			dirFiles, err := RuntimeFiles.ReadDir(fp)
 			if err != nil {
 				return fmt.Errorf("error reading runtime directory: %v", err)
@@ -86,11 +78,30 @@ func FunctionTemplate(name string, build bool, runtime string) error {
 		if err != nil {
 			return fmt.Errorf("error reading runtime file: %v", err)
 		}
-		err = os.WriteFile(filepath.Join(cfp, name, filepath.Base(fp)), data, 0644)
+		err = os.WriteFile(filepath.Join(dir, filepath.Base(fp)), data, 0644)
 		if err != nil {
 			return fmt.Errorf("error writing file: %v", err)
 		}
-		fmt.Print("./" + filepath.Join(name, filepath.Base(fp)) + "\n")
+		return nil
+	}
+
+	if build {
+		//only render filepaths not in UserLangDir
+		dirFiles, err := RuntimeFiles.ReadDir("templates/" + runtime)
+		if err != nil {
+			return fmt.Errorf("error reading runtime directory: %v", err)
+		}
+
+		for _, embedfp := range dirFiles {
+			if !slices.ContainsFunc(UserLangDir[runtime], func(s string) bool {
+				return embedfp.Name() == strings.TrimSuffix(s, "/")
+			}) {
+				err := render("templates/" + runtime + "/" + embedfp.Name())
+				if err != nil {
+					return err
+				}
+			}
+		}
 		return nil
 	}
 

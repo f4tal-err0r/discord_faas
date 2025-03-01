@@ -32,7 +32,19 @@ var funcCreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Create a function",
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := platform.FunctionTemplate(args[0], false, runtime); err != nil {
+		if len(args) == 0 {
+			fmt.Println("No function name provided")
+			return
+		}
+		cwd, err := os.Getwd()
+		if err != nil {
+			fmt.Print(err)
+			return
+		}
+
+		fp := cwd + "/" + args[0]
+
+		if err := platform.FunctionTemplate(fp, true, runtime); err != nil {
 			fmt.Println(err)
 			return
 		}
@@ -43,7 +55,7 @@ var funcRuntimeCmd = &cobra.Command{
 	Use:   "runtimes",
 	Short: "List available runtimes",
 	Run: func(cmd *cobra.Command, args []string) {
-		for runtime, _ := range platform.UserLangDir {
+		for runtime := range platform.UserLangDir {
 			fmt.Println(runtime)
 		}
 	},
