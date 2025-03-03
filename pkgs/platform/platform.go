@@ -13,16 +13,6 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-// We want to support possible future container types
-type Platform interface {
-	BuildImage(*os.File, *Image) error
-	Exec(string) error
-	ListImages() ([]*Image, error)
-	RemoveImage(string) error
-	Rollback(string) error
-	Test(string) error
-}
-
 type Image struct {
 	Name      string
 	Runtime   string

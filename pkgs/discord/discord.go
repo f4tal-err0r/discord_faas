@@ -25,11 +25,11 @@ var (
 	}
 )
 
-type helpFunc func(*discordgo.Interaction, *Client) *discordgo.InteractionResponse
+type handlerFunc func(*discordgo.Interaction, *Client) *discordgo.InteractionResponse
 
 type defaultCommandData struct {
 	Description string
-	Function    helpFunc
+	Function    handlerFunc
 }
 
 type Client struct {
