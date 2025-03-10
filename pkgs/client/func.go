@@ -9,9 +9,9 @@ import (
 )
 
 func DeployFunc(fp string) error {
-	data, err := os.ReadFile(fp)
+	data, err := os.ReadFile(fp + "/dfaas.yaml")
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to open dfaas.yaml: %s", err)
 	}
 
 	// parse yaml
