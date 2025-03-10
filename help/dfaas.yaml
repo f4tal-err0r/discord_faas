@@ -1,0 +1,11 @@
+name: "help"
+runtime: "golang"
+description: "Template for a new FaaS function"
+version: "0.0.1"
+command:
+  - name: "option1"
+    description: "Example of passing a discord slash command"
+    args:
+      - name: "arg1"
+        description: "Example of passing an argument to a discord slash command"
+        required: true
