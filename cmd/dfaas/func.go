@@ -44,7 +44,7 @@ var funcCreateCmd = &cobra.Command{
 
 		fp := cwd + "/" + args[0]
 
-		if err := platform.FunctionTemplate(fp, false, runtime); err != nil {
+		if err := platform.FunctionTemplate(fp, runtime); err != nil {
 			fmt.Println(err)
 			return
 		}

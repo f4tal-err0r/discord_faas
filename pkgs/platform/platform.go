@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"text/template"
 
 	"slices"
@@ -23,7 +22,7 @@ var ConstTempl = []string{"README.md", "dfaas.yaml"}
 //go:embed templates/*
 var RuntimeFiles embed.FS
 
-func FunctionTemplate(dir string, build bool, runtime string) error {
+func FunctionTemplate(dir string, runtime string) error {
 	runtimeList := maps.Keys(UserLangDir)
 
 	if !slices.Contains(runtimeList, runtime) {
@@ -34,28 +33,14 @@ func FunctionTemplate(dir string, build bool, runtime string) error {
 		return fmt.Errorf("error creating directory: %v", err)
 	}
 
-	if build {
-		//only render filepaths not in UserLangDir
-		dirFiles, err := RuntimeFiles.ReadDir("templates/" + runtime)
-		if err != nil {
-			return fmt.Errorf("error reading runtime directory: %v", err)
-		}
-
-		for _, embedfp := range dirFiles {
-			if !slices.ContainsFunc(UserLangDir[runtime], func(s string) bool {
-				return embedfp.Name() == strings.TrimSuffix(s, "/")
-			}) {
-				err := render(dir, filepath.Join("templates", runtime, embedfp.Name()))
-				if err != nil {
-					return err
-				}
-			}
-		}
-		return nil
+	efp := filepath.Join("templates", runtime)
+	s, err := RuntimeFiles.ReadDir(efp)
+	if err != nil {
+		return fmt.Errorf("error opening runtime file: %v", err)
 	}
-
-	for _, usrfiles := range UserLangDir[runtime] {
-		if err := render(dir, "templates/"+runtime+"/"+usrfiles); err != nil {
+	for _, file := range s {
+		err := render(dir, filepath.Join(efp, file.Name()))
+		if err != nil {
 			return err
 		}
 	}
@@ -101,8 +86,18 @@ func renderConst(dir string, file string, runtime string) error {
 }
 
 func render(dir string, efp string) error {
-	if strings.HasSuffix(efp, "/") {
-		efp = strings.TrimSuffix(efp, "/")
+	s, err := RuntimeFiles.Open(efp)
+	if err != nil {
+		return fmt.Errorf("error opening runtime file: %v", err)
+	}
+	defer s.Close()
+
+	stat, err := s.Stat()
+	if err != nil {
+		return fmt.Errorf("error getting runtime file info: %v", err)
+	}
+
+	if stat.IsDir() {
 		dirFiles, err := RuntimeFiles.ReadDir(efp)
 		if err != nil {
 			return fmt.Errorf("error reading runtime directory: %v", err)

@@ -1,8 +1,8 @@
 package api
 
 import (
-	"bytes"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"strings"
@@ -11,7 +11,6 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	jwt "github.com/golang-jwt/jwt/v5"
-	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"google.golang.org/protobuf/proto"
 
@@ -21,67 +20,6 @@ import (
 	"github.com/f4tal-err0r/discord_faas/pkgs/discord"
 	"github.com/f4tal-err0r/discord_faas/pkgs/security"
 )
-
-// Define an upgrader
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
-}
-
-// WebSocket handler type
-type wsHandler func(conn *websocket.Conn, r *http.Request)
-
-type Router struct {
-	Router *mux.Router
-}
-
-// Middleware to upgrade all connections to WebSocket
-func wsWrapper(next wsHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		// Upgrade the connection to a WebSocket
-		conn, err := upgrader.Upgrade(w, r, nil)
-		if err != nil {
-			log.Println("Connection Upgrade error:", err)
-			return
-		}
-		defer conn.Close()
-
-		// Call the next handler with the WebSocket connection
-		next(conn, r)
-	}
-}
-
-func NewRouter(bot *discord.Client, jwtsvc *security.JWTService) *Router {
-	router := mux.NewRouter()
-
-	router.HandleFunc("/api/deploy", wsWrapper(DeployHandler))
-	router.HandleFunc("/api/context", func(w http.ResponseWriter, r *http.Request) {
-		ContextHandler(w, r, bot.ContextTokenCache, bot.Session)
-	})
-	router.HandleFunc("/api/context/auth", func(w http.ResponseWriter, r *http.Request) {
-		AuthHandler(w, r, jwtsvc)
-	})
-	router.HandleFunc("/api/context/decode", func(w http.ResponseWriter, r *http.Request) {
-		token := getTokenFromHeader(r)
-		if token == "" {
-			http.Error(w, "Invalid token", http.StatusUnauthorized)
-			return
-		}
-
-		claims, err := jwtsvc.ParseToken(token)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		w.Write([]byte(fmt.Sprintf("%+v", claims)))
-
-	})
-	return &Router{Router: router}
-}
 
 func ContextHandler(w http.ResponseWriter, r *http.Request, contextTokenCache *sync.Map, dsession *discordgo.Session) {
 
@@ -133,67 +71,67 @@ func ContextHandler(w http.ResponseWriter, r *http.Request, contextTokenCache *s
 	w.Write(ctxPb)
 }
 
-func AuthHandler(w http.ResponseWriter, r *http.Request, jwtsvc *security.JWTService) {
+func AuthHandler(w http.ResponseWriter, r *http.Request, jwtService *security.JWTService) {
 	token := getTokenFromHeader(r)
 	if token == "" {
-		http.Error(w, "Invalid token", http.StatusUnauthorized)
+		http.Error(w, "Unauthorized: Token is missing", http.StatusUnauthorized)
+		return
 	}
 
-	guildid := r.Header.Get("GuildID")
+	guildID := r.Header.Get("GuildID")
 
-	gm, err := discord.IdentGuildMember(token, guildid)
+	guildMember, err := discord.IdentGuildMember(token, guildID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Error identifying guild member: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if (gm.Permissions & 1 << 3) != 0 {
-		http.Error(w, "Missing permissions", http.StatusForbidden)
+	if (guildMember.Permissions & (1 << 3)) != 0 {
+		http.Error(w, "Forbidden: Insufficient permissions", http.StatusForbidden)
 		return
 	}
 
-	jwt, err := jwtsvc.CreateToken(security.Claims{
-		UserID:  gm.User.ID,
-		GuildID: guildid,
+	jwtToken, err := jwtService.CreateToken(security.Claims{
+		UserID:  guildMember.User.ID,
+		GuildID: guildID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(6 * time.Hour)),
 		},
 	})
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Error creating JWT: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.Write([]byte(jwt))
+	w.Write([]byte(jwtToken))
 }
 
 func DeployHandler(conn *websocket.Conn, r *http.Request) {
-	// Recieve a file from the request
-	_, p, err := conn.ReadMessage()
+	mr, err := r.MultipartReader()
 	if err != nil {
-		log.Println("Error reading message:", err)
-		conn.WriteMessage(websocket.TextMessage, []byte(err.Error()))
-		conn.Close()
+		log.Println(err)
 		return
 	}
 
-	// Assume the body is a file
-	_ = bytes.NewReader(p)
+	for {
+		part, err := mr.NextPart()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		//send message to websocket
+		err = conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("Recieved file: %s", part.FileName())))
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
+	}
+
 }
-
-// func unmarshalRequest(r *http.Request) (*pb.Wrapper, error) {
-// 	wrapper := new(pb.Wrapper)
-
-// 	data, err := io.ReadAll(r.Body)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("invalid request: %w", err)
-// 	}
-// 	if err := proto.Unmarshal(data, wrapper); err != nil {
-// 		return nil, fmt.Errorf("invalid request: %w", err)
-// 	}
-
-// 	return wrapper, nil
-// }
 
 func getTokenFromHeader(r *http.Request) string {
 	token := r.Header.Get("Authorization")
@@ -207,4 +145,16 @@ func getTokenFromHeader(r *http.Request) string {
 	}
 
 	return token
+}
+
+func ContextHandlerFunc(tokenCache *sync.Map, session *discordgo.Session) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ContextHandler(w, r, tokenCache, session)
+	}
+}
+
+func AuthHandlerFunc(jwtSvc *security.JWTService) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		AuthHandler(w, r, jwtSvc)
+	}
 }

@@ -27,14 +27,11 @@ func NewHandler(cfg *config.Config) (*Handler, error) {
 		return nil, fmt.Errorf("unable to create dir %s: %w", cfg.Filestore, err)
 	}
 
-	dbc, err := db.NewDB(cfg)
+	dbc, err := db.NewDB(cfg.DBPath)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create db: %w", err)
 	}
 
-	if err := dbc.InitDB(); err != nil {
-		return nil, fmt.Errorf("unable to create db schema: %w", err)
-	}
 	ds, err := discord.NewClient(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create discord client: %w", err)
