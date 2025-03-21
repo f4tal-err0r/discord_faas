@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 
@@ -11,7 +12,6 @@ import (
 )
 
 var runtime string
-var dfaasPath string
 
 func init() {
 	rootCmd.AddCommand(funcRootCmd)
@@ -20,7 +20,6 @@ func init() {
 	funcCreateCmd.MarkFlagRequired("runtime")
 	funcRootCmd.AddCommand(funcRuntimeCmd)
 	funcRootCmd.AddCommand(funcDeployCmd)
-	funcDeployCmd.Flags().StringVarP(&dfaasPath, "config", "c", "./faas.yaml", "Path to dfaas yaml config file; this should be in the root of the project")
 }
 
 var funcRootCmd = &cobra.Command{
@@ -65,12 +64,25 @@ var funcDeployCmd = &cobra.Command{
 	Use:   "deploy",
 	Short: "Deploy a function",
 	Run: func(cmd *cobra.Command, args []string) {
-		if _, err := os.Stat(dfaasPath); os.IsNotExist(err) {
+
+		if len(args) == 0 {
+			fmt.Println("No directory provided")
+			return
+		}
+
+		dfaasPath := args[0]
+
+		if _, err := os.Stat(filepath.Join(dfaasPath, "/dfaas.yaml")); os.IsNotExist(err) {
 			fmt.Printf("ERR: dfaas.yaml not found in %s\n", dfaasPath)
 			return
 		} else {
-			if err := client.DeployFunc(dfaasPath); err != nil {
-				fmt.Println(err)
+			c, err := client.GetCurrentContext()
+			if err != nil {
+				fmt.Println("ERR: GetCurrentContext", err)
+				return
+			}
+			if err := client.DeployFunc(c, dfaasPath); err != nil {
+				fmt.Println("ERR: DeployFunc", err)
 				return
 			}
 		}

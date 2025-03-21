@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
 	_ "modernc.org/sqlite"
 )
@@ -17,20 +18,20 @@ type GuildMetadata struct {
 
 // Function represents a row in the Functions table
 type Function struct {
-	ID          int    `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Runtime     string `json:"runtime"`
-	CreatedAt   string `json:"created_at"`
-	UpdatedAt   string `json:"updated_at"`
-	GuildID     int    `json:"guildid"`
+	ID          int       `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	Runtime     string    `json:"runtime"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+	GuildID     int       `json:"guildid"`
 }
 
 // ApprovedRole represents a row in the ApprovedRoles table
 type ApprovedRole struct {
-	RoleID    string `json:"roleid"`
-	GuildID   int    `json:"guildid"`
-	CreatedAt string `json:"created_at"`
+	RoleID    string    `json:"roleid"`
+	GuildID   int       `json:"guildid"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 // Command represents a row in the Commands table
@@ -55,6 +56,7 @@ type DBHandler struct {
 
 func NewDB(DBPath string) (*DBHandler, error) {
 	var handler DBHandler
+
 	db, err := sql.Open("sqlite", DBPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %v", err)

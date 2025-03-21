@@ -72,9 +72,10 @@ func (h *Handler) Start() {
 		log.Print("Bot Shutdown.")
 	}()
 
-	// start api server
-	apiHandler := api.NewRouter(h.Bot, h.Jwtsvc)
-	log.Fatal(http.ListenAndServe(":8085", apiHandler.Router))
+	handler := api.NewHandler(h.Bot, h.Jwtsvc)
+
+	router := api.NewRouter(handler)
+	log.Fatal(http.ListenAndServe(":8085", router))
 }
 
 func createDirIfNotExist(dirPath string) error {
@@ -85,7 +86,6 @@ func createDirIfNotExist(dirPath string) error {
 		if err != nil {
 			return fmt.Errorf("failed to create directory: %v", err)
 		}
-		fmt.Printf("Directory %s created successfully\n", dirPath)
 	} else {
 		return nil
 	}

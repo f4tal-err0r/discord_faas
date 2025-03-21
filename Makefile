@@ -15,14 +15,13 @@ help:
 
 .PHONY: protobuf-template
 protobuf-template:
-	protoc --go_opt=Mproto/content.proto=./function --go_out=./pkgs/platform/templates/golang ./proto/content.proto
-	protoc --ruby_out=./pkgs/platform/templates/ruby ./proto/content.proto
+	protoc --go_opt=paths=source_relative  --go-grpc_opt=paths=source_relative --go_out=./pkgs/platform/templates/golang --go-grpc_out=./pkgs/platform/templates/golang ./proto/service.proto
+	protoc --python_out=./pkgs/platform/templates/python --grpc_python_out=./ ./proto/service.proto
 
 .PHONY: protobuf
-protobuf: protobuf-template
-	protoc --go_out=./ --go_opt=paths=source_relative ./proto/message.proto
-	protoc --go_out=./ --go_opt=Mproto/content.proto=./proto --go_opt=paths=source_relative ./proto/message.proto
-
+protobuf: 
+	protoc --go_out=./ --go_opt=paths=source_relative ./proto/api.proto
+	protoc --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative --go_out=./ --go-grpc_out=./ ./proto/service.proto
 
 ## test: run all tests
 .PHONY: test

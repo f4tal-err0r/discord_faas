@@ -13,8 +13,6 @@ func applyMigration(h *DBHandler) error {
 			owner TEXT NOT NULL
 		);
 
-		CREATE INDEX idx_guild_name ON GuildMetadata(name);
-
 		CREATE TABLE IF NOT EXISTS Functions (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			name TEXT NOT NULL CHECK (length(name) > 0),
