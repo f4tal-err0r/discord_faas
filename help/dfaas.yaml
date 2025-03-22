@@ -1,7 +1,8 @@
-name: "{{ .Name }}"
+name: "help"
+runtime: "golang"
 description: "Template for a new FaaS function"
 version: "0.0.1"
-command:
+commands:
   - name: "option1"
     description: "Example of passing a discord slash command"
     args:

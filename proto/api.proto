@@ -13,7 +13,7 @@ message Args {
 }
 
 message Commands {
-    string Command = 1;
+    string Name = 1;
     string Description = 2;
     repeated Args Args = 3;
 }

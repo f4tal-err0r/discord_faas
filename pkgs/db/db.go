@@ -3,8 +3,8 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
-	"github.com/f4tal-err0r/discord_faas/pkgs/config"
 	_ "modernc.org/sqlite"
 )
 
@@ -18,20 +18,20 @@ type GuildMetadata struct {
 
 // Function represents a row in the Functions table
 type Function struct {
-	ID          int    `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Runtime     string `json:"runtime"`
-	CreatedAt   string `json:"created_at"`
-	UpdatedAt   string `json:"updated_at"`
-	GuildID     int    `json:"guildid"`
+	ID          int       `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	Runtime     string    `json:"runtime"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+	GuildID     int       `json:"guildid"`
 }
 
 // ApprovedRole represents a row in the ApprovedRoles table
 type ApprovedRole struct {
-	RoleID    string `json:"roleid"`
-	GuildID   int    `json:"guildid"`
-	CreatedAt string `json:"created_at"`
+	RoleID    string    `json:"roleid"`
+	GuildID   int       `json:"guildid"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 // Command represents a row in the Commands table
@@ -46,7 +46,7 @@ type Command struct {
 type CommandArgument struct {
 	ID          int    `json:"id"`
 	CommandID   int    `json:"command_id"`
-	Argument    string `json:"argument"`
+	Name        string `json:"name"`
 	Description string `json:"description"`
 }
 
@@ -54,74 +54,25 @@ type DBHandler struct {
 	db *sql.DB
 }
 
-func NewDB(cfg *config.Config) (*DBHandler, error) {
+func NewDB(DBPath string) (*DBHandler, error) {
 	var handler DBHandler
-	db, err := sql.Open("sqlite", cfg.DBPath)
+
+	db, err := sql.Open("sqlite", DBPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %v", err)
 	}
 
 	handler.db = db
 
+	if err := applyMigration(&handler); err != nil {
+		return nil, fmt.Errorf("failed to apply migration: %v", err)
+	}
+
 	return &handler, nil
 }
 
 func (h *DBHandler) Close() error {
 	return h.db.Close()
-}
-
-func (h *DBHandler) InitDB() error {
-	CreateTablesDb := `
-		CREATE TABLE IF NOT EXISTS GuildMetadata (
-			guildid INTEGER PRIMARY KEY,
-			source TEXT NOT NULL,
-			name TEXT NOT NULL CHECK (length(name) > 0),
-			owner TEXT NOT NULL
-		);
-
-		CREATE INDEX idx_guild_name ON GuildMetadata(name);
-
-		CREATE TABLE IF NOT EXISTS Functions (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			name TEXT NOT NULL CHECK (length(name) > 0),
-			description TEXT NOT NULL,
-			runtime TEXT NOT NULL,
-			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-			guildid INTEGER NOT NULL,
-			FOREIGN KEY (guildid) REFERENCES GuildMetadata(guildid) ON DELETE CASCADE
-		);
-
-		CREATE TABLE IF NOT EXISTS ApprovedRoles (
-			roleid TEXT NOT NULL,
-			guildid INTEGER NOT NULL,
-			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-			PRIMARY KEY (roleid, guildid),
-			FOREIGN KEY (guildid) REFERENCES GuildMetadata(guildid) ON DELETE CASCADE
-		);
-
-		CREATE TABLE IF NOT EXISTS Commands (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			command TEXT NOT NULL CHECK (length(command) > 0),
-			description TEXT NOT NULL,
-			guildid INTEGER NOT NULL,
-			FOREIGN KEY (guildid) REFERENCES GuildMetadata(guildid) ON DELETE CASCADE
-		);
-
-		CREATE TABLE IF NOT EXISTS CommandArguments (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			command_id INTEGER NOT NULL,
-			argument TEXT NOT NULL,
-			description TEXT NOT NULL,
-			FOREIGN KEY (command_id) REFERENCES Commands(id) ON DELETE CASCADE
-		);
-	`
-	_, err := h.db.Exec(CreateTablesDb)
-	if err != nil {
-		return fmt.Errorf("failed to create table: %v", err)
-	}
-
-	return nil
 }
 
 // InsertGuildMetadata inserts a new guild
@@ -196,7 +147,7 @@ func (h *DBHandler) GetCommandsByGuild(guildID int) ([]Command, error) {
 // InsertCommandArgument inserts a new command argument
 func (h *DBHandler) InsertCommandArgument(arg CommandArgument) error {
 	_, err := h.db.Exec("INSERT INTO CommandArguments (command_id, argument, description) VALUES (?, ?, ?)",
-		arg.CommandID, arg.Argument, arg.Description)
+		arg.CommandID, arg.Name, arg.Description)
 	return err
 }
 
@@ -211,7 +162,7 @@ func (h *DBHandler) GetArgumentsByCommand(commandID int) ([]CommandArgument, err
 	var args []CommandArgument
 	for rows.Next() {
 		var arg CommandArgument
-		if err := rows.Scan(&arg.ID, &arg.CommandID, &arg.Argument, &arg.Description); err != nil {
+		if err := rows.Scan(&arg.ID, &arg.CommandID, &arg.Name, &arg.Description); err != nil {
 			return nil, err
 		}
 		args = append(args, arg)

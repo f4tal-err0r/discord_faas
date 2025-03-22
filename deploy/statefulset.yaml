@@ -36,7 +36,7 @@ spec:
           - mountPath: /app/config
             name: config
             readOnly: true
-          - mountPath: /workspace
+          - mountPath: /app/data
             name: faas-workspace
           - mountPath: /app/certs
             name: faas-jwt
@@ -55,17 +55,21 @@ spec:
           defaultMode: 0644
   volumeClaimTemplates:
   - metadata:
-      name: discord-faas
-    spec:
-      accessModes: [ "ReadWriteOncePod" ]
-      resources:
-        requests:
-          storage: 5Gi
-  - metadata:
       name: faas-workspace
     spec:
-      accessModes: [ "ReadWriteOncePod" ]
+      accessModes: [ "ReadWriteOnce" ]
       resources:
         requests:
           storage: 5Gi
-      
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: faas-artifacts
+spec:
+  resources:
+    requests:
+      storage: 10Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteMany  

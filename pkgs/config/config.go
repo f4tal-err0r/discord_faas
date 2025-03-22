@@ -32,15 +32,23 @@ func NewPathConfig(path string) (*Config, error) {
 	}
 
 	viper.SetConfigFile(path)
-
 	viper.AutomaticEnv()
-	viper.BindEnv("discord.token", "DISCORD_TOKEN")
+
+	envBindings := map[string]string{
+		"discord.token":    "DISCORD_TOKEN",
+		"discord.clientid": "DISCORD_CLIENTID",
+		"discord.adminuid": "DISCORD_ADMINUID",
+	}
+	for key, env := range envBindings {
+		viper.BindEnv(key, env)
+	}
 
 	cpath, err := os.UserCacheDir()
 	if err != nil {
-		return nil, fmt.Errorf("Unable to resolve CacheDir: %s.", err)
+		return nil, fmt.Errorf("unable to resolve CacheDir: %s", err)
 	}
 	viper.SetDefault("cachepath", cpath)
+	viper.SetDefault("filestore", "/app/data/funcstore")
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
@@ -52,11 +60,15 @@ func NewPathConfig(path string) (*Config, error) {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
-	if cfg.Discord.Token == "" {
-		return nil, fmt.Errorf("missing config: discord.token")
+	requiredConfigs := map[string]string{
+		"discord.token":    cfg.Discord.Token,
+		"discord.clientid": cfg.Discord.ClientID,
 	}
-	if cfg.Discord.ClientID == "" {
-		return nil, fmt.Errorf("missing config: discord.clientid")
+	for key, value := range requiredConfigs {
+		if value == "" {
+			return nil, fmt.Errorf("missing config: %s", key)
+		}
 	}
+
 	return &cfg, nil
 }

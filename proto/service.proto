@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+option go_package = "github.com/f4tal-err0r/discord_faas/proto";
+
+service ProcessorService {
+  rpc RecvContent (google.protobuf.Empty) returns (stream DiscordContent);
+  rpc SendResp (DiscordResp) returns (google.protobuf.Empty);
+}
+
+message Workloadid {
+    string id = 1;
+}
+
+message File {
+    bytes Data = 1;
+    string Name = 2;
+}
+
+message DiscordContent {
+    string Command = 1;
+    map<string, string> Args = 2;
+    string Msgid = 3;
+}
+
+message DiscordResp {
+    string Message = 1;
+    string Embed = 2;
+    repeated File Files = 3;
+    string Msgid = 4; 
+}
