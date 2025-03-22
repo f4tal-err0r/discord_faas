@@ -1,6 +1,8 @@
 package api
 
 import (
+	middleware "github.com/f4tal-err0r/discord_faas/api/middleware"
+	"github.com/f4tal-err0r/discord_faas/pkgs/security"
 	"github.com/gorilla/mux"
 )
 
@@ -9,14 +11,19 @@ type RouterAdder interface {
 	IsSecure() bool
 }
 
-func NewRouter(route ...RouterAdder) (*mux.Router, error) {
+func NewRouter(jwtsvc *security.JWTService, route ...RouterAdder) (*mux.Router, error) {
 	r := mux.NewRouter()
+
+	jwtmw := middleware.NewJWTMiddleware(jwtsvc)
+	protected := r.PathPrefix("/").Subrouter()
+	protected.Use(jwtmw.JWTMiddleware)
 
 	for _, v := range route {
 		if v.IsSecure() {
-			//TODO: JWT Check
+			v.AddRoute(protected)
+		} else {
+			v.AddRoute(r)
 		}
-		v.AddRoute(r)
 	}
 
 	return r, nil

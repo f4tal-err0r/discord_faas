@@ -10,6 +10,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/f4tal-err0r/discord_faas/pkgs/config"
 	"github.com/f4tal-err0r/discord_faas/pkgs/db"
+	pb "github.com/f4tal-err0r/discord_faas/proto"
 )
 
 type FaasDB interface {
@@ -84,4 +85,27 @@ func (c *Client) InitGuildData() error {
 	}
 
 	return nil
+}
+
+func (c *Client) AddGuildCommand(command *pb.Commands, gid string) (*discordgo.ApplicationCommand, error) {
+
+	var args []*discordgo.ApplicationCommandOption
+
+	for _, arg := range command.Args {
+		args = append(args, &discordgo.ApplicationCommandOption{
+			Type:        discordgo.ApplicationCommandOptionString,
+			Name:        arg.Name,
+			Description: arg.Description,
+			Required:    arg.Required,
+		})
+	}
+	ccs, err := c.Session.ApplicationCommandCreate(c.Session.State.User.ID, gid, &discordgo.ApplicationCommand{
+		Name:        command.Name,
+		Description: command.Description,
+		Options:     args,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error creating command: %v", err)
+	}
+	return ccs, nil
 }

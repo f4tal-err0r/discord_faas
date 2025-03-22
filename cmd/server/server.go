@@ -61,10 +61,10 @@ var startCmd = &cobra.Command{
 		handlers := []api.RouterAdder{
 			cauth.NewAuthHandler(jwtsvc, dbot),
 			context.NewHandler(dbot),
-			deploy.NewHandler(),
+			deploy.NewHandler(dbot),
 		}
 
-		r, err := api.NewRouter(handlers...)
+		r, err := api.NewRouter(jwtsvc, handlers...)
 		if err != nil {
 			log.Fatalf("failed to create router: %v", err)
 		}

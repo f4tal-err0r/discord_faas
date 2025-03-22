@@ -4,8 +4,10 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -54,11 +56,12 @@ func DeployFunc(context *pb.ContextResp, fp string) error {
 		return err
 	}
 
-	req, err := http.NewRequest("POST", context.ServerURL+"/api/deploy", body)
+	req, err := http.NewRequest("POST", context.ServerURL+"/api/func/deploy", body)
 	if err != nil {
 		return err
 	}
 	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("Authorization", fmt.Sprintf("%s", context.JWToken))
 
 	client := http.DefaultClient
 	resp, err := client.Do(req)
@@ -68,6 +71,9 @@ func DeployFunc(context *pb.ContextResp, fp string) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode == http.StatusUnauthorized {
+			return fmt.Errorf("unauthorized: Reauth to context using `%s context auth` or verify current context", os.Args[0])
+		}
 		return fmt.Errorf("failed to deploy function: %s", resp.Status)
 	}
 
@@ -134,9 +140,24 @@ func marshalFaasYaml(fp string) ([]byte, error) {
 
 	var BuildReq pb.BuildFunc
 
-	err = yaml.Unmarshal(data, &BuildReq)
+	//HACK: yaml somehow assumes that some strings are not strings
+	//and protobuf doesnt add type annotations for yaml
+	//So I had to unmarshal this from yaml -> json -> protobuf
+	//I hate it.
+	var yamlMap map[string]interface{}
+	err = yaml.Unmarshal(data, &yamlMap)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error unmarshaling YAML: %v", err)
+	}
+
+	jsonData, err := json.MarshalIndent(yamlMap, "", "  ")
+	if err != nil {
+		log.Fatalf("error marshaling to JSON: %v", err)
+	}
+
+	err = json.Unmarshal(jsonData, &BuildReq)
+	if err != nil {
+		return nil, fmt.Errorf("error unmarshaling JSON: %v", err)
 	}
 
 	if BuildReq.Name == "" {
@@ -150,7 +171,6 @@ func marshalFaasYaml(fp string) ([]byte, error) {
 	if BuildReq.Runtime == "" {
 		return nil, fmt.Errorf("no runtime found in dfaas.yaml")
 	}
-
 	metadata, err := proto.Marshal(&BuildReq)
 	if err != nil {
 		return nil, err
