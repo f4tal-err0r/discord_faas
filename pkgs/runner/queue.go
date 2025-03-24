@@ -19,8 +19,8 @@ type NotifierRouter struct {
 	queue sync.Map
 }
 
-func (n *NotifierRouter) CreateNotifier(funcid string) {
-	n.queue.Store(funcid, make(chan *pb.DiscordResp))
+func (n *NotifierRouter) createNotifier(msgid string) {
+	n.queue.Store(msgid, make(chan *pb.DiscordResp))
 }
 func NewProcessorService() *ProcessorService {
 	return &ProcessorService{
@@ -44,15 +44,19 @@ func (s *ProcessorService) AddContent(c *pb.DiscordContent) error {
 
 }
 
-func (s *ProcessorService) GetWorkerResp(funcid string, msgid string) chan *pb.DiscordResp {
+func (s *ProcessorService) GetWorkerResp(meta *pb.Funcmeta) *pb.DiscordResp {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	if res, ok := s.notif.queue.Load(msgid); !ok {
-		return nil
-	} else {
-		return res.(chan *pb.DiscordResp)
+	_, ok := s.notif.queue.Load(meta.MsgId)
+	if !ok {
+		s.notif.createNotifier(meta.MsgId)
 	}
+	reschan, _ := s.notif.queue.Load(meta.MsgId)
+
+	resp := <-reschan.(chan *pb.DiscordResp)
+	return resp
+
 }
 
 func (s *ProcessorService) SendResp(ctx context.Context, resp *pb.DiscordResp) (*emptypb.Empty, error) {
