@@ -8,7 +8,6 @@ initenv.sh
 config.yaml
 bin/
 test/
-**/**pb.*
 .vscode/
 test.Dockerfile
 *.pem

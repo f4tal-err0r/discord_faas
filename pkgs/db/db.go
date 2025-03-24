@@ -21,6 +21,7 @@ type Function struct {
 	ID          int       `json:"id"`
 	Name        string    `json:"name"`
 	Description string    `json:"description"`
+	Version     string    `json:"version"`
 	Runtime     string    `json:"runtime"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`

@@ -2,8 +2,6 @@ package runner
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"sync"
 
 	pb "github.com/f4tal-err0r/discord_faas/proto"
@@ -11,22 +9,24 @@ import (
 )
 
 type ProcessorService struct {
-	notif notifyQueue
 	queue map[string]chan *pb.DiscordContent
+	notif *NotifierRouter
 	mu    sync.RWMutex
 	pb.UnimplementedProcessorServiceServer
 }
 
-type notifyQueue struct {
-	queue map[string]chan *pb.DiscordResp
-	mu    sync.RWMutex
+type NotifierRouter struct {
+	queue sync.Map
 }
 
+func (n *NotifierRouter) CreateNotifier(funcid string) {
+	n.queue.Store(funcid, make(chan *pb.DiscordResp))
+}
 func NewProcessorService() *ProcessorService {
 	return &ProcessorService{
 		queue: make(map[string]chan *pb.DiscordContent),
-		notif: notifyQueue{
-			queue: make(map[string]chan *pb.DiscordResp),
+		notif: &NotifierRouter{
+			queue: sync.Map{},
 		},
 	}
 }
@@ -35,37 +35,36 @@ func (s *ProcessorService) AddContent(c *pb.DiscordContent) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if _, exists := s.queue[c.Msgid]; !exists {
-		s.queue[c.Msgid] = make(chan *pb.DiscordContent, 10)
+	if _, exists := s.queue[c.Funcmeta.Id]; !exists {
+		s.queue[c.Funcmeta.Id] = make(chan *pb.DiscordContent, 10)
 	}
 
-	s.queue[c.Msgid] <- c
+	s.queue[c.Funcmeta.Id] <- c
 	return nil
 
 }
 
-func (s *notifyQueue) GetAddWorkerQueue(id string) chan *pb.DiscordResp {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+func (s *ProcessorService) GetWorkerResp(funcid string, msgid string) chan *pb.DiscordResp {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
-	if c, ok := s.queue[id]; !ok {
-		s.queue[id] = make(chan *pb.DiscordResp, 10)
-		return s.queue[id]
+	if res, ok := s.notif.queue.Load(msgid); !ok {
+		return nil
 	} else {
-		return c
+		return res.(chan *pb.DiscordResp)
 	}
 }
 
 func (s *ProcessorService) SendResp(ctx context.Context, resp *pb.DiscordResp) (*emptypb.Empty, error) {
-	s.notif.queue[resp.Msgid] <- resp
+	s.notif.queue.Store(resp.Funcmeta.Id, resp)
 	return &emptypb.Empty{}, nil
 }
 
-func (s *ProcessorService) SubContent(msgID *pb.Workloadid, stream pb.ProcessorService_RecvContentServer) error {
+func (s *ProcessorService) SubContent(funcid *pb.Funcmeta, stream pb.ProcessorService_RecvContentServer) error {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	if c, ok := s.queue[msgID.Id]; !ok {
+	if c, ok := s.queue[funcid.Id]; !ok {
 		return nil
 	} else {
 		for content := range c {
@@ -75,10 +74,4 @@ func (s *ProcessorService) SubContent(msgID *pb.Workloadid, stream pb.ProcessorS
 		}
 		return nil
 	}
-}
-
-func generateHex() string {
-	b := make([]byte, 5) // 5 bytes = 10 hex characters
-	_, _ = rand.Read(b)
-	return hex.EncodeToString(b)
 }

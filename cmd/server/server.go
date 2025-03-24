@@ -76,19 +76,35 @@ var startCmd = &cobra.Command{
 
 		log.Print("Bot Started...")
 
-		go func() {
-			c := make(chan os.Signal, 1)
-			signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
-			<-c
+		stopChan := make(chan os.Signal, 1)
+		signal.Notify(stopChan, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 
-			dbot.Session.Close()
-			log.Print("Bot Shutdown.")
+		appsev := &http.Server{Addr: ":8080", Handler: r}
+		artifactsrv := &http.Server{Addr: ":9090", Handler: http.FileServer(http.Dir(cfg.Filestore))}
+
+		go func() {
+			if err := appsev.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				log.Fatalf("ListenAndServe: %v", err)
+			}
 		}()
 
-		if err := http.ListenAndServe(":8085", r); err != nil {
-			log.Fatal(err)
+		go func() {
+			if err := artifactsrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				log.Fatalf("ListenAndServe: %v", err)
+			}
+		}()
 
+		<-stopChan
+
+		if err := appsev.Close(); err != nil {
+			log.Printf("Error closing server1: %v", err)
 		}
+		if err := artifactsrv.Close(); err != nil {
+			log.Printf("Error closing server2: %v", err)
+		}
+
+		dbot.Session.Close()
+		log.Print("Bot Shutdown.")
 	},
 }
 

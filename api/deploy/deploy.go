@@ -2,10 +2,13 @@ package deploy
 
 import (
 	"bytes"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"os"
 
 	"google.golang.org/protobuf/proto"
 
@@ -55,6 +58,21 @@ func (h *Handler) DeployHandler(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		}
+		if part.FileName() == "func" {
+			cmdid := generateHex()
+			buf := new(bytes.Buffer)
+			buf.ReadFrom(part)
+			file, err := os.Create(cmdid + ".tar.gz")
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			_, err = io.Copy(buf, file)
+			if err != nil {
+				log.Println(err)
+				return
+			}
+		}
 	}
 	// Fetch the guild data
 	guild, err := h.dbot.Session.State.Guild(ccs.GuildID)
@@ -66,7 +84,7 @@ func (h *Handler) DeployHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	w.Write([]byte(fmt.Sprintf("%+v", BuildReq)))
+
 	w.Write([]byte(fmt.Sprintf("%s Function deployed successfully to %s", BuildReq.GetName(), guild.Name)))
 }
 
@@ -76,4 +94,10 @@ func (h *Handler) AddRoute(r *mux.Router) {
 
 func (h *Handler) IsSecure() bool {
 	return true
+}
+
+func generateHex() string {
+	b := make([]byte, 5) // 5 bytes = 10 hex characters
+	_, _ = rand.Read(b)
+	return hex.EncodeToString(b)
 }
