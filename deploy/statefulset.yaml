@@ -53,6 +53,8 @@ spec:
         env: 
         - name: MINIO_BROWSER
           value: off
+        - name: MINIO_SERVER_URL
+          value: "http://discord-faas:9000"
         envFrom:
         - secretRef:
             name: faas-minio-root

@@ -4,6 +4,7 @@ import (
 	"net"
 
 	"google.golang.org/grpc"
+	spec "k8s.io/api/core/v1"
 
 	pb "github.com/f4tal-err0r/discord_faas/proto"
 )
@@ -14,9 +15,10 @@ type Service struct {
 }
 
 type RunnerOpts struct {
-	Id    string
-	Image string
-	Cmd   []string
+	Id      string
+	Image   string
+	Cmd     []string
+	EnvVars []spec.EnvVar
 }
 
 type Platform interface {

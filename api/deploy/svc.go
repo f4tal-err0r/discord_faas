@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/url"
 
 	"github.com/f4tal-err0r/discord_faas/pkgs/config"
 	"github.com/f4tal-err0r/discord_faas/pkgs/discord"
@@ -21,6 +22,7 @@ type Handler struct {
 type Storage interface {
 	AddSrcArtifact(ctx context.Context, name string, data io.Reader, size int64) error
 	GetSrcPath(ctx context.Context, name string) (string, error)
+	GetPresignedUrl(ctx context.Context, bucket string, cmdid string) (*url.URL, error)
 	DeleteSrcArtifact(ctx context.Context, name string) error
 }
 
@@ -45,9 +47,15 @@ func (h *Handler) Builder(cmdid string) error {
 			"/kaniko/executor",
 			fmt.Sprintf("--context=%s.tar.gz", uri),
 			"--no-push",
+			"--build-arg=S3_UPLOAD_URL=\"%s\"",
 		},
 	}
 	r := runner.NewK8sRunner(h.cs)
 
-	return r.CreateRunner(ropts)
+	uploadUrl, err := h.storage.GetPresignedUrl(context.Background(), "faas-artifacts", cmdid)
+	if err != nil {
+		return err
+	}
+
+	return r.CreateRunner(ropts, uploadUrl.String())
 }

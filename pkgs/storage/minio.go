@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/url"
 	"os"
+	"time"
 
 	minio "github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -16,7 +17,7 @@ type Minio struct {
 }
 
 func NewMinio() (*Minio, error) {
-	endpoint := "localhost:9000"
+	endpoint := "discord-faas:9000"
 	rfaasuser := os.Getenv("MINIO_ROOT_USER")
 	rfaaspass := os.Getenv("MINIO_ROOT_PASSWORD")
 
@@ -63,6 +64,15 @@ func (m *Minio) AddSrcArtifact(ctx context.Context, name string, data io.Reader,
 		return err
 	}
 	return nil
+}
+
+func (m *Minio) GetPresignedUrl(ctx context.Context, bucket string, cmdid string) (*url.URL, error) {
+
+	url, err := m.client.PresignedPutObject(ctx, bucket, cmdid+".func", (30 * time.Minute))
+	if err != nil {
+		return nil, err
+	}
+	return url, nil
 }
 
 func (m *Minio) GetSrcPath(ctx context.Context, name string) (string, error) {
