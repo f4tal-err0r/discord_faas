@@ -8,7 +8,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os"
 
 	"google.golang.org/protobuf/proto"
 
@@ -31,6 +30,8 @@ func (h *Handler) DeployHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
+
+	var cmdid string
 
 	for {
 		part, err := mr.NextPart()
@@ -59,21 +60,17 @@ func (h *Handler) DeployHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		if part.FileName() == "func" {
-			cmdid := generateHex()
+			cmdid = generateHex()
 			buf := new(bytes.Buffer)
 			buf.ReadFrom(part)
-			file, err := os.Create(cmdid + ".tar.gz")
-			if err != nil {
-				log.Println(err)
-				return
-			}
-			_, err = io.Copy(buf, file)
+			err = h.storage.AddSrcArtifact(r.Context(), cmdid+".tar.gz", buf, int64(buf.Len()))
 			if err != nil {
 				log.Println(err)
 				return
 			}
 		}
 	}
+
 	// Fetch the guild data
 	guild, err := h.dbot.Session.State.Guild(ccs.GuildID)
 	if err != nil {
@@ -83,6 +80,14 @@ func (h *Handler) DeployHandler(w http.ResponseWriter, r *http.Request) {
 			log.Fatal("error retrieving guild:", err)
 			return
 		}
+	}
+
+	err = h.Builder(cmdid)
+	if err != nil {
+		log.Println(err)
+		return
+	} else {
+		log.Printf("Started Build Job for %s::%s", guild.Name, BuildReq.GetName())
 	}
 
 	w.Write([]byte(fmt.Sprintf("%s Function deployed successfully to %s", BuildReq.GetName(), guild.Name)))

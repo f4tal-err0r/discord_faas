@@ -48,7 +48,7 @@ func NewPathConfig(path string) (*Config, error) {
 		return nil, fmt.Errorf("unable to resolve CacheDir: %s", err)
 	}
 	viper.SetDefault("cachepath", cpath)
-	viper.SetDefault("filestore", "/app/data/funcstore")
+	viper.SetDefault("filestore", "/app/data/artifacts")
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {

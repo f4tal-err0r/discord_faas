@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	pb "github.com/f4tal-err0r/discord_faas/proto"
 	proto "google.golang.org/protobuf/proto"
@@ -94,7 +95,17 @@ func createTar(functionDir string) (*bytes.Buffer, error) {
 	tw := tar.NewWriter(gz)
 	defer tw.Close()
 
-	err := filepath.Walk(functionDir, func(path string, info os.FileInfo, err error) error {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+	defer os.Chdir(cwd)
+
+	if err := os.Chdir(functionDir); err != nil {
+		return nil, err
+	}
+
+	err = filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -103,6 +114,10 @@ func createTar(functionDir string) (*bytes.Buffer, error) {
 			return err
 		}
 		header.Name = filepath.ToSlash(path)
+		if strings.Count(header.Name, "/") > 1 {
+			parts := strings.Split(header.Name, string(filepath.Separator))
+			header.Name = filepath.Join(parts[len(parts)-2:]...)
+		}
 		if err := tw.WriteHeader(header); err != nil {
 			return err
 		}

@@ -4,3 +4,4 @@ skaffold.yaml
 initenv.sh
 Dockerfile
 test.Dockerfile
+test/

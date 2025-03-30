@@ -16,7 +16,6 @@ type Service struct {
 type RunnerOpts struct {
 	Id    string
 	Image string
-	Name  string
 	Cmd   []string
 }
 
@@ -37,8 +36,4 @@ func NewService() (*Service, error) {
 
 func (s *Service) Run(lis net.Listener) error {
 	return s.grpcserv.Serve(lis)
-}
-
-func (s *Service) CreateRunner(pl Platform, content *pb.DiscordContent) {
-	s.Proc.AddContent()
 }

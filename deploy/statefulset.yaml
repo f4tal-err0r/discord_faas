@@ -13,6 +13,7 @@ spec:
       labels:
         app: discord-faas
     spec:
+      serviceAccountName: discord-faas
       containers:
       - name: discord-faas-controller
         command: ["/app/faas_server"]
@@ -44,6 +45,24 @@ spec:
         envFrom:
         - secretRef:
             name: discord-faas
+        - secretRef:
+            name: faas-minio-root
+      - name: filestore
+        image: minio/minio:RELEASE.2025-03-12T18-04-18Z-cpuv1
+        args: ["server", "/opt/data"]
+        env: 
+        - name: MINIO_BROWSER
+          value: off
+        envFrom:
+        - secretRef:
+            name: faas-minio-root
+        volumeMounts:
+        - name: faas-artifacts-store
+          mountPath: /opt/data
+          readOnly: false
+        ports:
+        - containerPort: 9000
+          hostPort: 9000
       volumes:
       - name: config
         configMap:
@@ -60,16 +79,11 @@ spec:
       accessModes: [ "ReadWriteOnce" ]
       resources:
         requests:
-          storage: 5Gi
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: faas-artifacts
-spec:
-  resources:
-    requests:
-      storage: 10Gi
-  volumeMode: Filesystem
-  accessModes:
-    - ReadWriteMany
+          storage: 1Gi
+  - metadata:
+      name: faas-artifacts-store
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 10Gi

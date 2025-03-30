@@ -6,4 +6,6 @@ resources:
   - secrets_private.yaml
   - certs_private.yaml
   - service.yaml
+  - rbac.yaml
+  - minio_secrets_private.yaml
 namespace: faas
