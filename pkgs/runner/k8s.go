@@ -16,7 +16,7 @@ type K8sRunners struct {
 	spec *batchv1.Job
 }
 
-func NewK8sRunner(cs *kubernetes.Clientset) *K8sRunners {
+func NewK8sBuilder(cs *kubernetes.Clientset) *K8sRunners {
 	spec := &batchv1.Job{
 		Spec: batchv1.JobSpec{
 			Template: spec.PodTemplateSpec{

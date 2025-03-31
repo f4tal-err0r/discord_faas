@@ -50,7 +50,7 @@ func (h *Handler) Builder(cmdid string) error {
 			"--build-arg=S3_UPLOAD_URL=\"%s\"",
 		},
 	}
-	r := runner.NewK8sRunner(h.cs)
+	r := runner.NewK8sBuilder(h.cs)
 
 	uploadUrl, err := h.storage.GetPresignedUrl(context.Background(), "faas-artifacts", cmdid)
 	if err != nil {
