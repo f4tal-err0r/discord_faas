@@ -4,35 +4,36 @@ import (
 	"net"
 
 	"google.golang.org/grpc"
-	"k8s.io/client-go/kubernetes"
+	spec "k8s.io/api/core/v1"
 
 	pb "github.com/f4tal-err0r/discord_faas/proto"
 )
 
 type Service struct {
 	grpcserv *grpc.Server
-	cs       *kubernetes.Clientset
 	Proc     *ProcessorService
-	pl       Platform
+}
+
+type RunnerOpts struct {
+	Id      string
+	Image   string
+	Cmd     []string
+	EnvVars []spec.EnvVar
 }
 
 type Platform interface {
-	NewFuncRunner(img string, funcpath string)
-	NewBuilder(img string, funcpath string)
+	Run() error
+	TailLogs() (chan []byte, error)
 }
 
-func NewService(cs *kubernetes.Clientset) (*Service, error) {
+func NewService() (*Service, error) {
 	var svc Service
 
 	svc.Proc = NewProcessorService()
-	pb.RegisterProcessorServiceServer(grpc.NewServer(), svc.Proc)
+	svc.grpcserv = grpc.NewServer()
+	pb.RegisterProcessorServiceServer(svc.grpcserv, svc.Proc)
 
-	svc.cs = cs
 	return &svc, nil
-}
-
-func (s *Service) Build(img string, hash string) error {
-
 }
 
 func (s *Service) Run(lis net.Listener) error {

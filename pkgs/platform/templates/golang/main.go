@@ -6,9 +6,10 @@ import (
 	"log"
 	"os"
 
-	"faas.dev/function"
-	pb "faas.dev/proto"
+	// "faas.dev/function"
+	// pb "faas.dev/proto"
 
+	"github.com/f4tal-err0r/discord_faas/pkgs/platform/templates/golang/function"
 	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"

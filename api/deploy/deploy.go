@@ -2,6 +2,8 @@ package deploy
 
 import (
 	"bytes"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"log"
@@ -29,6 +31,8 @@ func (h *Handler) DeployHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var cmdid string
+
 	for {
 		part, err := mr.NextPart()
 		if err == io.EOF {
@@ -55,7 +59,18 @@ func (h *Handler) DeployHandler(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		}
+		if part.FileName() == "func" {
+			cmdid = generateHex()
+			buf := new(bytes.Buffer)
+			buf.ReadFrom(part)
+			err = h.storage.AddSrcArtifact(r.Context(), cmdid+".tar.gz", buf, int64(buf.Len()))
+			if err != nil {
+				log.Println(err)
+				return
+			}
+		}
 	}
+
 	// Fetch the guild data
 	guild, err := h.dbot.Session.State.Guild(ccs.GuildID)
 	if err != nil {
@@ -66,7 +81,15 @@ func (h *Handler) DeployHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	w.Write([]byte(fmt.Sprintf("%+v", BuildReq)))
+
+	err = h.Builder(cmdid)
+	if err != nil {
+		log.Println(err)
+		return
+	} else {
+		log.Printf("Started Build Job for %s::%s", guild.Name, BuildReq.GetName())
+	}
+
 	w.Write([]byte(fmt.Sprintf("%s Function deployed successfully to %s", BuildReq.GetName(), guild.Name)))
 }
 
@@ -76,4 +99,10 @@ func (h *Handler) AddRoute(r *mux.Router) {
 
 func (h *Handler) IsSecure() bool {
 	return true
+}
+
+func generateHex() string {
+	b := make([]byte, 5) // 5 bytes = 10 hex characters
+	_, _ = rand.Read(b)
+	return hex.EncodeToString(b)
 }

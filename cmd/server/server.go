@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -16,7 +15,10 @@ import (
 	"github.com/f4tal-err0r/discord_faas/pkgs/db"
 	"github.com/f4tal-err0r/discord_faas/pkgs/discord"
 	"github.com/f4tal-err0r/discord_faas/pkgs/security"
+	"github.com/f4tal-err0r/discord_faas/pkgs/storage"
 	"github.com/spf13/cobra"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 func init() {
@@ -39,10 +41,6 @@ var startCmd = &cobra.Command{
 			log.Fatalf("failed to load config: %v", err)
 		}
 
-		if err := createDirIfNotExist(cfg.Filestore); err != nil {
-			log.Fatalf("unable to create dir %s: %v", cfg.Filestore, err)
-		}
-
 		jwtsvc, err := security.NewJWT()
 		if err != nil {
 			log.Fatalf("unable to create jwt service: %v", err)
@@ -58,10 +56,28 @@ var startCmd = &cobra.Command{
 			log.Fatalf("failed to create discord bot: %v", err)
 		}
 
+		// Creates the in-cluster config
+		config, err := rest.InClusterConfig()
+		if err != nil {
+			log.Fatalf("Error creating in-cluster config: %v", err)
+		}
+
+		// Create the Kubernetes client
+		clientset, err := kubernetes.NewForConfig(config)
+		if err != nil {
+			log.Fatalf("Error creating Kubernetes client: %v", err)
+		}
+
+		// create minio storage
+		storage, err := storage.NewMinio()
+		if err != nil {
+			log.Fatalf("failed to create minio storage: %v", err)
+		}
+
 		handlers := []api.RouterAdder{
 			cauth.NewAuthHandler(jwtsvc, dbot),
 			context.NewHandler(dbot),
-			deploy.NewHandler(dbot),
+			deploy.NewHandler(cfg, dbot, clientset, storage),
 		}
 
 		r, err := api.NewRouter(jwtsvc, handlers...)
@@ -76,32 +92,24 @@ var startCmd = &cobra.Command{
 
 		log.Print("Bot Started...")
 
-		go func() {
-			c := make(chan os.Signal, 1)
-			signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
-			<-c
+		stopChan := make(chan os.Signal, 1)
+		signal.Notify(stopChan, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 
-			dbot.Session.Close()
-			log.Print("Bot Shutdown.")
+		appserv := &http.Server{Addr: ":8080", Handler: r}
+
+		go func() {
+			if err := appserv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				log.Fatalf("ListenAndServe: %v", err)
+			}
 		}()
 
-		if err := http.ListenAndServe(":8085", r); err != nil {
-			log.Fatal(err)
+		<-stopChan
 
+		if err := appserv.Close(); err != nil {
+			log.Printf("Error closing appserver: %v", err)
 		}
+
+		dbot.Session.Close()
+		log.Print("Bot Shutdown.")
 	},
-}
-
-func createDirIfNotExist(dirPath string) error {
-	// Check if the directory already exists
-	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
-		// Create the directory and any necessary parents
-		err := os.MkdirAll(dirPath, os.ModePerm)
-		if err != nil {
-			return fmt.Errorf("failed to create directory: %v", err)
-		}
-	} else {
-		return nil
-	}
-	return nil
 }

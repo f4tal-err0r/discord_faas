@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	pb "github.com/f4tal-err0r/discord_faas/proto"
 	proto "google.golang.org/protobuf/proto"
@@ -70,32 +71,41 @@ func DeployFunc(context *pb.ContextResp, fp string) error {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		if resp.StatusCode == http.StatusUnauthorized {
-			return fmt.Errorf("unauthorized: Reauth to context using `%s context auth` or verify current context", os.Args[0])
-		}
-		return fmt.Errorf("failed to deploy function: %s", resp.Status)
-	}
-
 	// Parse the response body
 	respbody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
 
-	fmt.Print(string(respbody))
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to deploy function: %s", respbody)
+	}
 
 	return nil
 }
 
-// createTar creates a gzip tarball of the function directory
 func createTar(functionDir string) (*bytes.Buffer, error) {
 
 	tarBuffer := new(bytes.Buffer)
-	tw := tar.NewWriter(tarBuffer)
+	gz := gzip.NewWriter(tarBuffer)
+	defer gz.Close()
+	if _, err := gz.Write(tarBuffer.Bytes()); err != nil {
+		return nil, err
+	}
+	tw := tar.NewWriter(gz)
 	defer tw.Close()
 
-	err := filepath.Walk(functionDir, func(path string, info os.FileInfo, err error) error {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+	defer os.Chdir(cwd)
+
+	if err := os.Chdir(functionDir); err != nil {
+		return nil, err
+	}
+
+	err = filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -104,6 +114,10 @@ func createTar(functionDir string) (*bytes.Buffer, error) {
 			return err
 		}
 		header.Name = filepath.ToSlash(path)
+		if strings.Count(header.Name, "/") > 1 {
+			parts := strings.Split(header.Name, string(filepath.Separator))
+			header.Name = filepath.Join(parts[len(parts)-2:]...)
+		}
 		if err := tw.WriteHeader(header); err != nil {
 			return err
 		}
@@ -124,11 +138,6 @@ func createTar(functionDir string) (*bytes.Buffer, error) {
 		return nil, err
 	}
 
-	gz := gzip.NewWriter(tarBuffer)
-	defer gz.Close()
-	if _, err := gz.Write(tarBuffer.Bytes()); err != nil {
-		return nil, err
-	}
 	return tarBuffer, nil
 }
 

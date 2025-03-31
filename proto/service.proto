@@ -8,8 +8,9 @@ service ProcessorService {
   rpc SendResp (DiscordResp) returns (google.protobuf.Empty);
 }
 
-message Workloadid {
-    string id = 1;
+message Funcmeta {
+    string Id = 1;
+    string MsgId = 2;
 }
 
 message File {
@@ -20,12 +21,12 @@ message File {
 message DiscordContent {
     string Command = 1;
     map<string, string> Args = 2;
-    string Msgid = 3;
+    Funcmeta Funcmeta = 3;
 }
 
 message DiscordResp {
     string Message = 1;
     string Embed = 2;
     repeated File Files = 3;
-    string Msgid = 4; 
+    Funcmeta Funcmeta = 4;
 }
