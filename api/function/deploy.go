@@ -1,24 +1,23 @@
-package deploy
+package function
 
 import (
 	"bytes"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 
-	"google.golang.org/protobuf/proto"
-
 	"github.com/bwmarrin/discordgo"
+	models "github.com/f4tal-err0r/discord_faas/api/v1"
 	"github.com/f4tal-err0r/discord_faas/pkgs/security"
-	pb "github.com/f4tal-err0r/discord_faas/proto"
 	"github.com/gorilla/mux"
 )
 
 func (h *Handler) DeployHandler(w http.ResponseWriter, r *http.Request) {
-	var BuildReq pb.BuildFunc
+	var BuildReq models.BuildFunc
 	var ccs *discordgo.ApplicationCommand
 
 	//get claims from context
@@ -45,7 +44,7 @@ func (h *Handler) DeployHandler(w http.ResponseWriter, r *http.Request) {
 		if part.FormName() == "metadata" {
 			buf := new(bytes.Buffer)
 			buf.ReadFrom(part)
-			err = proto.Unmarshal(buf.Bytes(), &BuildReq)
+			err = json.Unmarshal(buf.Bytes(), &BuildReq)
 			if err != nil {
 				log.Println(err)
 				return
@@ -87,10 +86,10 @@ func (h *Handler) DeployHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	} else {
-		log.Printf("Started Build Job for %s::%s", guild.Name, BuildReq.GetName())
+		log.Printf("Started Build Job for %s::%s", guild.Name, BuildReq.Name)
 	}
 
-	w.Write([]byte(fmt.Sprintf("%s Function deployed successfully to %s", BuildReq.GetName(), guild.Name)))
+	w.Write([]byte(fmt.Sprintf("%s Function deployed successfully to %s", BuildReq.Name, guild.Name)))
 }
 
 func (h *Handler) AddRoute(r *mux.Router) {

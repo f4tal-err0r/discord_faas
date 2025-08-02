@@ -11,7 +11,7 @@ import (
 
 type Service struct {
 	grpcserv *grpc.Server
-	Proc     *ProcessorService
+	Proc     *FuncService
 }
 
 type RunnerOpts struct {

@@ -8,9 +8,9 @@ import (
 	"sync"
 
 	"github.com/bwmarrin/discordgo"
+	models "github.com/f4tal-err0r/discord_faas/api/v1"
 	"github.com/f4tal-err0r/discord_faas/pkgs/config"
 	"github.com/f4tal-err0r/discord_faas/pkgs/db"
-	pb "github.com/f4tal-err0r/discord_faas/proto"
 )
 
 type FaasDB interface {
@@ -87,7 +87,7 @@ func (c *Client) InitGuildData() error {
 	return nil
 }
 
-func (c *Client) AddGuildCommand(command *pb.Commands, gid string) (*discordgo.ApplicationCommand, error) {
+func (c *Client) AddGuildCommand(command *models.Commands, gid string) (*discordgo.ApplicationCommand, error) {
 
 	var args []*discordgo.ApplicationCommandOption
 

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/f4tal-err0r/discord_faas/pkgs/client"
+	"github.com/f4tal-err0r/discord_faas/internal/client"
 	"github.com/spf13/cobra"
 )
 

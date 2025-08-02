@@ -3,7 +3,7 @@ config/**.*
 !config/example.yml
 skaffold.yaml
 app/
-deploy/*_private.*
+**/*_private.*
 initenv.sh
 config.yaml
 bin/

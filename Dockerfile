@@ -1,4 +1,4 @@
-FROM golang:1.24.0
+FROM golang:1.24.3
 WORKDIR /app
 ADD . .
 RUN go mod download

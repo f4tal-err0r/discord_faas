@@ -11,12 +11,12 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-type K8sRunners struct {
+type K8sJob struct {
 	cs   *kubernetes.Clientset
 	spec *batchv1.Job
 }
 
-func NewK8sBuilder(cs *kubernetes.Clientset) *K8sRunners {
+func NewK8sJob(cs *kubernetes.Clientset, opts ...func(*K8sJob)) *K8sJob {
 	spec := &batchv1.Job{
 		Spec: batchv1.JobSpec{
 			Template: spec.PodTemplateSpec{
@@ -89,14 +89,14 @@ func NewK8sBuilder(cs *kubernetes.Clientset) *K8sRunners {
 		},
 	}
 
-	rp := &K8sRunners{
+	rp := &K8sJob{
 		spec: spec,
 		cs:   cs,
 	}
 	return rp
 }
 
-func (r *K8sRunners) CreateRunner(opts RunnerOpts, uploadUrl string) error {
+func (r *K8sJob) CreateRunner(opts RunnerOpts, uploadUrl string) error {
 	runner := r.spec.DeepCopy()
 
 	runner.ObjectMeta.Name = fmt.Sprintf("dfaas-%s", opts.Id)

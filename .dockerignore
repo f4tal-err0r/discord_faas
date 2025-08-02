@@ -5,3 +5,4 @@ initenv.sh
 Dockerfile
 test.Dockerfile
 test/
+**/*_private.*

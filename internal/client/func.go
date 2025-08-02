@@ -14,12 +14,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	pb "github.com/f4tal-err0r/discord_faas/proto"
-	proto "google.golang.org/protobuf/proto"
+	api "github.com/f4tal-err0r/discord_faas/api/v1"
 	"gopkg.in/yaml.v3"
 )
 
-func DeployFunc(context *pb.ContextResp, fp string) error {
+func DeployFunc(context *api.ContextResp, fp string) error {
 
 	metadata, err := marshalFaasYaml(fp)
 	if err != nil {
@@ -62,7 +61,7 @@ func DeployFunc(context *pb.ContextResp, fp string) error {
 		return err
 	}
 	req.Header.Set("Content-Type", writer.FormDataContentType())
-	req.Header.Set("Authorization", fmt.Sprintf("%s", context.JWToken))
+	req.Header.Set("Authorization", context.JWToken)
 
 	client := http.DefaultClient
 	resp, err := client.Do(req)
@@ -147,7 +146,7 @@ func marshalFaasYaml(fp string) ([]byte, error) {
 		return nil, fmt.Errorf("unable to open dfaas.yaml: %s", err)
 	}
 
-	var BuildReq pb.BuildFunc
+	var BuildReq api.BuildFunc
 
 	//HACK: yaml somehow assumes that some strings are not strings
 	//and protobuf doesnt add type annotations for yaml
@@ -180,9 +179,9 @@ func marshalFaasYaml(fp string) ([]byte, error) {
 	if BuildReq.Runtime == "" {
 		return nil, fmt.Errorf("no runtime found in dfaas.yaml")
 	}
-	metadata, err := proto.Marshal(&BuildReq)
+	metadata, err := json.Marshal(&BuildReq)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error marshaling to JSON: %v", err)
 	}
 
 	return metadata, nil

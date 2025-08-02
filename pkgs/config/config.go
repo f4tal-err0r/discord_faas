@@ -20,8 +20,8 @@ type Discord struct {
 	AdminUID string `mapstructure:"adminuid"`
 }
 
-func New() (*Config, error) {
-	return NewPathConfig("/app/config/config.yaml")
+func New(path string) (*Config, error) {
+	return NewPathConfig(path)
 }
 
 func NewPathConfig(path string) (*Config, error) {

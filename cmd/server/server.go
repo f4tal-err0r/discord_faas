@@ -10,10 +10,10 @@ import (
 	"github.com/f4tal-err0r/discord_faas/api"
 	"github.com/f4tal-err0r/discord_faas/api/context"
 	cauth "github.com/f4tal-err0r/discord_faas/api/context/auth"
-	"github.com/f4tal-err0r/discord_faas/api/deploy"
+	"github.com/f4tal-err0r/discord_faas/api/function"
+	"github.com/f4tal-err0r/discord_faas/internal/discord"
 	"github.com/f4tal-err0r/discord_faas/pkgs/config"
 	"github.com/f4tal-err0r/discord_faas/pkgs/db"
-	"github.com/f4tal-err0r/discord_faas/pkgs/discord"
 	"github.com/f4tal-err0r/discord_faas/pkgs/security"
 	"github.com/f4tal-err0r/discord_faas/pkgs/storage"
 	"github.com/spf13/cobra"
@@ -21,9 +21,19 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+var (
+	cfgPath string
+	mode    string
+	backend string
+)
+
 func init() {
 	rootCmd.AddCommand(serverCmd)
 	serverCmd.AddCommand(startCmd)
+
+	serverCmd.PersistentFlags().StringVarP(&cfgPath, "config", "c", "/app/config/config.yaml", "Path to config file")
+	serverCmd.PersistentFlags().StringVarP(&mode, "mode", "m", "kubernetes", "Mode to run in (kubernetes, docker)")
+	serverCmd.PersistentFlags().StringVar(&backend, "backend", "local://data", "Storage backend to use. Supports local://path or s3://bucket")
 }
 
 var serverCmd = &cobra.Command{
@@ -36,7 +46,7 @@ var startCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Start Discord bot",
 	Run: func(cmd *cobra.Command, args []string) {
-		cfg, err := config.New()
+		cfg, err := config.New(cfgPath)
 		if err != nil {
 			log.Fatalf("failed to load config: %v", err)
 		}
@@ -76,8 +86,8 @@ var startCmd = &cobra.Command{
 
 		handlers := []api.RouterAdder{
 			cauth.NewAuthHandler(jwtsvc, dbot),
-			context.NewHandler(dbot),
-			deploy.NewHandler(cfg, dbot, clientset, storage),
+			context.NewHandler(dbot, cfg),
+			function.NewHandler(cfg, dbot, clientset, storage),
 		}
 
 		r, err := api.NewRouter(jwtsvc, handlers...)

@@ -28,7 +28,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ProcessorServiceClient interface {
-	RecvContent(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (grpc.ServerStreamingClient[DiscordContent], error)
+	RecvContent(ctx context.Context, in *Funcmeta, opts ...grpc.CallOption) (grpc.ServerStreamingClient[DiscordContent], error)
 	SendResp(ctx context.Context, in *DiscordResp, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
@@ -40,13 +40,13 @@ func NewProcessorServiceClient(cc grpc.ClientConnInterface) ProcessorServiceClie
 	return &processorServiceClient{cc}
 }
 
-func (c *processorServiceClient) RecvContent(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (grpc.ServerStreamingClient[DiscordContent], error) {
+func (c *processorServiceClient) RecvContent(ctx context.Context, in *Funcmeta, opts ...grpc.CallOption) (grpc.ServerStreamingClient[DiscordContent], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	stream, err := c.cc.NewStream(ctx, &ProcessorService_ServiceDesc.Streams[0], ProcessorService_RecvContent_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[emptypb.Empty, DiscordContent]{ClientStream: stream}
+	x := &grpc.GenericClientStream[Funcmeta, DiscordContent]{ClientStream: stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -73,7 +73,7 @@ func (c *processorServiceClient) SendResp(ctx context.Context, in *DiscordResp, 
 // All implementations must embed UnimplementedProcessorServiceServer
 // for forward compatibility.
 type ProcessorServiceServer interface {
-	RecvContent(*emptypb.Empty, grpc.ServerStreamingServer[DiscordContent]) error
+	RecvContent(*Funcmeta, grpc.ServerStreamingServer[DiscordContent]) error
 	SendResp(context.Context, *DiscordResp) (*emptypb.Empty, error)
 	mustEmbedUnimplementedProcessorServiceServer()
 }
@@ -85,7 +85,7 @@ type ProcessorServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedProcessorServiceServer struct{}
 
-func (UnimplementedProcessorServiceServer) RecvContent(*emptypb.Empty, grpc.ServerStreamingServer[DiscordContent]) error {
+func (UnimplementedProcessorServiceServer) RecvContent(*Funcmeta, grpc.ServerStreamingServer[DiscordContent]) error {
 	return status.Errorf(codes.Unimplemented, "method RecvContent not implemented")
 }
 func (UnimplementedProcessorServiceServer) SendResp(context.Context, *DiscordResp) (*emptypb.Empty, error) {
@@ -113,11 +113,11 @@ func RegisterProcessorServiceServer(s grpc.ServiceRegistrar, srv ProcessorServic
 }
 
 func _ProcessorService_RecvContent_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(emptypb.Empty)
+	m := new(Funcmeta)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(ProcessorServiceServer).RecvContent(m, &grpc.GenericServerStream[emptypb.Empty, DiscordContent]{ServerStream: stream})
+	return srv.(ProcessorServiceServer).RecvContent(m, &grpc.GenericServerStream[Funcmeta, DiscordContent]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.

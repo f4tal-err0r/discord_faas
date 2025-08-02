@@ -8,14 +8,13 @@ import (
 	"net/http"
 	"os"
 
-	pb "github.com/f4tal-err0r/discord_faas/proto"
+	api "github.com/f4tal-err0r/discord_faas/api/v1"
 	fzf "github.com/ktr0731/go-fuzzyfinder"
-	"google.golang.org/protobuf/proto"
 )
 
 //TODO: Serialize future JWT token to server here, verifying ident w/ Oauth token
 
-func NewContext(uri string, token string) *pb.ContextResp {
+func NewContext(uri string, token string) *api.ContextResp {
 	req, err := http.NewRequest(http.MethodGet, uri+"/api/context", nil)
 	if err != nil {
 		log.Fatal(err)
@@ -28,7 +27,7 @@ func NewContext(uri string, token string) *pb.ContextResp {
 		log.Fatal(err)
 	}
 
-	var ctx pb.ContextResp
+	var ctx api.ContextResp
 
 	defer resp.Body.Close()
 
@@ -42,8 +41,8 @@ func NewContext(uri string, token string) *pb.ContextResp {
 	}
 
 	// Decode the response
-	if err := proto.Unmarshal(body, &ctx); err != nil {
-		fmt.Print("Unable to decode response")
+	err = json.Unmarshal(body, &ctx)
+	if err != nil {
 		log.Fatal(err)
 	}
 
@@ -78,7 +77,7 @@ func NewContext(uri string, token string) *pb.ContextResp {
 	return &ctx
 }
 
-func SerializeContextList(ctxl []*pb.ContextResp) error {
+func SerializeContextList(ctxl []*api.ContextResp) error {
 	cacheDir := FetchCacheDir("context")
 
 	file, err := createFileIfNotExists(cacheDir)
@@ -96,8 +95,8 @@ func SerializeContextList(ctxl []*pb.ContextResp) error {
 }
 
 // Load context from cache
-func LoadContextList() ([]*pb.ContextResp, error) {
-	var localctx []*pb.ContextResp
+func LoadContextList() ([]*api.ContextResp, error) {
+	var localctx []*api.ContextResp
 	cacheDir := FetchCacheDir("context")
 	file, err := createFileIfNotExists(cacheDir)
 	// If error returns EOF, return empty list
@@ -116,7 +115,7 @@ func LoadContextList() ([]*pb.ContextResp, error) {
 	return localctx, nil
 }
 
-func SwitchContext(ctxl []*pb.ContextResp, gid string) {
+func SwitchContext(ctxl []*api.ContextResp, gid string) {
 	if len(ctxl) == 0 {
 		fmt.Println("No contexts found")
 	}
@@ -129,7 +128,7 @@ func SwitchContext(ctxl []*pb.ContextResp, gid string) {
 	}
 }
 
-func GetCurrentContext() (*pb.ContextResp, error) {
+func GetCurrentContext() (*api.ContextResp, error) {
 	ctxl, err := LoadContextList()
 	if err != nil {
 		log.Fatal(err)
@@ -142,7 +141,7 @@ func GetCurrentContext() (*pb.ContextResp, error) {
 	return nil, fmt.Errorf("no current context found")
 }
 
-func UpdateContextToken(ctx *pb.ContextResp) error {
+func UpdateContextToken(ctx *api.ContextResp) error {
 	ctxl, err := LoadContextList()
 	if err != nil {
 		return err
@@ -176,7 +175,7 @@ func ListContexts() {
 	}
 }
 
-func AuthContent(ctx *pb.ContextResp) error {
+func AuthContent(ctx *api.ContextResp) error {
 	oauth := NewUserAuth()
 
 	oauthToken, err := oauth.StartAuth()

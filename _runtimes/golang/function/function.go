@@ -3,7 +3,7 @@ package function
 import (
 	"encoding/json"
 
-	pb "./proto"
+	pb "faas.dev/proto"
 	"github.com/bwmarrin/discordgo"
 )
 

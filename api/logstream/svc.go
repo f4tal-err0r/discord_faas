@@ -11,5 +11,5 @@ type Logger interface {
 }
 
 func NewHandler(cs *kubernetes.Clientset) *Handler {
-
+	return nil
 }

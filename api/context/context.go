@@ -1,23 +1,15 @@
 package context
 
 import (
-	"log"
+	"encoding/json"
 	"net/http"
 	"strings"
 
-	"github.com/f4tal-err0r/discord_faas/pkgs/config"
-	pb "github.com/f4tal-err0r/discord_faas/proto"
+	v1 "github.com/f4tal-err0r/discord_faas/api/v1"
 	"github.com/gorilla/mux"
-	"google.golang.org/protobuf/proto"
 )
 
 func (h *Handler) Handler(w http.ResponseWriter, r *http.Request) {
-	cfg, err := config.New()
-	if err != nil {
-		log.Println("Error getting config:", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
 
 	token := r.Header.Get("Token")
 
@@ -41,17 +33,18 @@ func (h *Handler) Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctxPb, err := proto.Marshal(&pb.ContextResp{
-		ClientID:  cfg.Discord.ClientID,
+	ctxresp := v1.ContextResp{
+		ClientID:  h.cfg.Discord.ClientID,
 		GuildID:   guild.ID,
 		GuildName: guild.Name,
-	})
+	}
+	resp, err := json.Marshal(ctxresp)
 	if err != nil {
-		log.Println("Error marshalling ctx: ", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.Write(ctxPb)
+
+	w.Write(resp)
 }
 
 func (h *Handler) AddRoute(r *mux.Router) {
