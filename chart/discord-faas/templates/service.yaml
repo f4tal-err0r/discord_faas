@@ -11,5 +11,12 @@ spec:
       targetPort: http
       protocol: TCP
       name: http
+  {{- if .Values.minioSidecar.enabled }}
+    - port: 9000
+      targetPort: 9000
+      protocol: TCP
+      name: minio
+  {{- end }}
   selector:
     {{- include "discord-faas.selectorLabels" . | nindent 4 }}
+

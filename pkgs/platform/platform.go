@@ -1,11 +1,14 @@
 package platform
 
-type Platform struct {
-	Name string
+import (
+	spec "k8s.io/api/core/v1"
+)
+
+type PlatformOpts struct {
+	GuildID string
+	
 }
 
-func NewPlatform(name string) *Platform {
-	return &Platform{
-		Name: name,
-	}
+type Platform interface {
+	CreateRunner
 }

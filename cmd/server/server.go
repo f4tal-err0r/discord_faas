@@ -10,7 +10,6 @@ import (
 	"github.com/f4tal-err0r/discord_faas/api"
 	"github.com/f4tal-err0r/discord_faas/api/context"
 	cauth "github.com/f4tal-err0r/discord_faas/api/context/auth"
-	"github.com/f4tal-err0r/discord_faas/api/function"
 	"github.com/f4tal-err0r/discord_faas/internal/discord"
 	"github.com/f4tal-err0r/discord_faas/pkgs/config"
 	"github.com/f4tal-err0r/discord_faas/pkgs/db"
@@ -79,15 +78,14 @@ var startCmd = &cobra.Command{
 		}
 
 		// create minio storage
-		storage, err := storage.NewMinio()
+		storage, err := storage.NewStorage(cfg.Storage)
 		if err != nil {
-			log.Fatalf("failed to create minio storage: %v", err)
+			log.Fatalf("failed to create storage client: %v", err)
 		}
 
 		handlers := []api.RouterAdder{
 			cauth.NewAuthHandler(jwtsvc, dbot),
 			context.NewHandler(dbot, cfg),
-			function.NewHandler(cfg, dbot, clientset, storage),
 		}
 
 		r, err := api.NewRouter(jwtsvc, handlers...)

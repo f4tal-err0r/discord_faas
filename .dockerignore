@@ -1,4 +1,4 @@
-deploy/
+chart/
 pkgs/client
 skaffold.yaml
 initenv.sh

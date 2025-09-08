@@ -1,12 +1,6 @@
 syntax = "proto3";
 
-import "google/protobuf/empty.proto";
 option go_package = "github.com/f4tal-err0r/discord_faas/proto";
-
-service ProcessorService {
-  rpc RecvContent (Funcmeta) returns (stream DiscordContent);
-  rpc SendResp (DiscordResp) returns (google.protobuf.Empty);
-}
 
 message Funcmeta {
     string Id = 1;

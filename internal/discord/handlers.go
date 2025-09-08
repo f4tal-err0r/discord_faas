@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/f4tal-err0r/discord_faas/pkgs/config"
 	pb "github.com/f4tal-err0r/discord_faas/proto"
 )
 
@@ -86,12 +85,6 @@ func loginCommand(i *discordgo.Interaction, c *Client) *discordgo.InteractionRes
 		},
 	}
 
-	cfg, err := config.New()
-	if err != nil {
-		message.Data.Content = "Error getting config"
-		return message
-	}
-
 	token, err := generateRandomHash()
 	if err != nil {
 		message.Data.Content = "Error generating token"
@@ -99,7 +92,7 @@ func loginCommand(i *discordgo.Interaction, c *Client) *discordgo.InteractionRes
 	}
 	c.ContextTokenCache.Store(token, i.GuildID)
 
-	message.Data.Content = "To Login to the command line client, use the following command: `dfaas context connect --url https://" + cfg.URLDomain + " --token " + token +
+	message.Data.Content = "To Login to the command line client, use the following command: `dfaas context connect --url https://" + c.cfg.URLDomain + " --token " + token +
 		"`\nTo Download the CLI Client: https://github.com/f4tal-err0r/discord_faas/"
 	return message
 }

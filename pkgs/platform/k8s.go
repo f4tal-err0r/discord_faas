@@ -1,4 +1,4 @@
-package runner
+package platform
 
 import (
 	"context"
@@ -96,7 +96,7 @@ func NewK8sJob(cs *kubernetes.Clientset, opts ...func(*K8sJob)) *K8sJob {
 	return rp
 }
 
-func (r *K8sJob) CreateRunner(opts RunnerOpts, uploadUrl string) error {
+func (r *K8sJob) CreateRunner(opts PlatformOpts, uploadUrl string) error {
 	runner := r.spec.DeepCopy()
 
 	runner.ObjectMeta.Name = fmt.Sprintf("dfaas-%s", opts.Id)

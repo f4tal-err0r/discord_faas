@@ -23,6 +23,7 @@ type Client struct {
 	Session           *discordgo.Session
 	ContextTokenCache *sync.Map
 	dbc               FaasDB
+	cfg               *config.Config
 }
 
 func NewClient(dbc FaasDB, cfg *config.Config) (*Client, error) {
@@ -35,6 +36,7 @@ func NewClient(dbc FaasDB, cfg *config.Config) (*Client, error) {
 		Session:           dsession,
 		ContextTokenCache: &sync.Map{},
 		dbc:               dbc,
+		cfg:               cfg,
 	}, nil
 }
 

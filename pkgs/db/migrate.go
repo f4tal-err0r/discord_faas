@@ -52,7 +52,7 @@ func applyMigration(h *DBHandler) error {
 			name TEXT NOT NULL CHECK (length(name) > 0),
 			lang TEXT NOT NULL CHECK (length(lang) > 0),
 			repo TEXT NOT NULL CHECK (length(repo) > 0),
-			private BOOLEAN NOT NULL,
+			dfaaspath TEXT NOT NULL CHECK (length(dfaaspath) > 0),
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			commitid TEXT NOT NULL CHECK (length(commitid) > 0),
 		);
