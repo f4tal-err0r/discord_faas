@@ -1,18 +1,14 @@
 package security
 
 import (
-	"crypto/rsa"
-	"crypto/x509"
-	"encoding/pem"
-	"log"
-	"os"
+	"crypto/rand"
+	"encoding/hex"
 
 	jwt "github.com/golang-jwt/jwt/v5"
 )
 
 type JWTService struct {
-	privateKey *rsa.PrivateKey
-	PublicKey  *rsa.PublicKey
+	secretKey []byte
 }
 
 type Claims struct {
@@ -23,24 +19,17 @@ type Claims struct {
 }
 
 func NewJWT() (*JWTService, error) {
-	pkFile, err := os.ReadFile("/app/certs/private.pem")
-	if err != nil {
-		log.Fatal("JWT keypair not found", err)
+	secretKey := make([]byte, 32)
+	if _, err := rand.Read(secretKey); err != nil {
+		return nil, err
 	}
-	KeyBlock, _ := pem.Decode(pkFile)
-	privateKey, err := x509.ParsePKCS1PrivateKey(KeyBlock.Bytes)
-	if err != nil {
-		log.Fatal("Unable to parse private key", err)
-	}
-	publicKey := &privateKey.PublicKey
-	return &JWTService{privateKey: privateKey, PublicKey: publicKey}, nil
+	return &JWTService{secretKey: secretKey}, nil
 }
 
 // Create new JWT token
 func (t *JWTService) CreateToken(claims Claims) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
-	token.Header["kid"] = "1"
-	tokenString, err := token.SignedString(t.privateKey)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString(t.secretKey)
 	if err != nil {
 		return "", err
 	}
@@ -50,20 +39,20 @@ func (t *JWTService) CreateToken(claims Claims) (string, error) {
 // Verify JWT token and only return error
 func (t *JWTService) VerifyToken(tokenString string) error {
 	_, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, jwt.ErrSignatureInvalid
 		}
-		return t.PublicKey, nil
+		return t.secretKey, nil
 	})
 	return err
 }
 
 func (t *JWTService) ParseToken(tokenString string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, jwt.ErrSignatureInvalid
 		}
-		return t.PublicKey, nil
+		return t.secretKey, nil
 	})
 	if err != nil {
 		return nil, err
@@ -73,4 +62,12 @@ func (t *JWTService) ParseToken(tokenString string) (*Claims, error) {
 		return nil, err
 	}
 	return claims, nil
+}
+
+func (t *JWTService) GenerateSecretKey() (string, error) {
+	secretKey := make([]byte, 32)
+	if _, err := rand.Read(secretKey); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(secretKey), nil
 }

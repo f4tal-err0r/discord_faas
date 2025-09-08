@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/f4tal-err0r/discord_faas/pkgs/discord"
+	"github.com/f4tal-err0r/discord_faas/internal/discord"
 	"github.com/f4tal-err0r/discord_faas/pkgs/security"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/mux"
@@ -58,6 +58,8 @@ func (h *Handler) IsSecure() bool {
 	return false
 }
 
+// getTokenFromHeader returns the token from the Authorization header
+// This is the token distributed via the /login command
 func getTokenFromHeader(r *http.Request) string {
 	token := r.Header.Get("Authorization")
 	if !strings.HasPrefix(token, "Bearer ") {

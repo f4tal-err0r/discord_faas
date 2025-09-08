@@ -1,0 +1,92 @@
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/f4tal-err0r/discord-faas
+  pullPolicy: Always
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+    create: true
+    automount: true
+    annotations: {}
+    name: "discord-faas"
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+  
+securityContext: {}
+            
+service:
+    type: ClusterIP
+    port: 8080
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+      
+resources: {}
+
+discord:
+  botToken: ""
+
+autoscaling:
+  enabled: false
+
+faas:
+  config:
+    discord: 
+      clientid: "" ## Bot client id, fetch in discord developer page
+      adminid: "" ## The admin user snowflake id
+    dbpath: "/app/data/dfaas.db"
+    domain: "" ## Domain for the bot to use for the API path (ie discord.com)
+    storage:
+      type: "local"
+      path: "/app/data/"
+      s3:
+        hostname: ""
+        username: ""
+        password: ""
+
+minioSidecar:
+  enabled: false
+  rootUser: "root-user"
+  rootPassword: "minio123"
+
+storage:
+  s3:
+    hostname: ""
+    username: ""
+    password: ""
+
+livenessProbe:
+  httpGet:
+    path: /
+    port: http
+readinessProbe:
+  httpGet:
+    path: /
+    port: http
+
+volumes: []
+
+volumeMounts: []
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

@@ -1,0 +1,74 @@
+{{- if .Values.minioSidecar.enabled -}}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "discord-faas.fullname" . }}-minio-secret
+type: Opaque
+data:
+  MINIO_ROOT_USER: {{ required "A valid .Values.minioSidecar.rootUser entry required!" .Values.minioSidecar.rootUser | b64enc }}
+  MINIO_ROOT_PASSWORD: {{ required "A valid .Values.minioSidecar.rootPassword entry required!" .Values.minioSidecar.rootPassword | b64enc }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "discord-faas.fullname" . }}-minio-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "discord-faas.fullname" . }}-minio
+spec:
+  selector:
+    matchLabels:
+      app: {{ include "discord-faas.fullname" . }}-minio
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: {{ include "discord-faas.fullname" . }}-minio
+    spec:
+      containers:
+      - name: minio
+        image: minio/minio:latest
+        args:
+        - server
+        - /data
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        env:
+        - name: MINIO_ROOT_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "discord-faas.fullname" . }}-minio-secret
+              key: MINIO_ROOT_USER
+        - name: MINIO_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "discord-faas.fullname" . }}-minio-secret
+              key: MINIO_ROOT_PASSWORD
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: {{ include "discord-faas.fullname" . }}-minio-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "discord-faas.fullname" . }}-minio
+spec:
+  selector:
+    app: {{ include "discord-faas.fullname" . }}-minio
+  ports:
+  - name: minio
+    protocol: TCP
+    port: 9000
+    targetPort: 9000
+{{- end }}
+

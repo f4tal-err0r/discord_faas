@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "discord-faas.fullname" . }}
+  labels:
+    {{- include "discord-faas.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  {{- if .Values.minioSidecar.enabled }}
+    - port: 9000
+      targetPort: 9000
+      protocol: TCP
+      name: minio
+  {{- end }}
+  selector:
+    {{- include "discord-faas.selectorLabels" . | nindent 4 }}
+

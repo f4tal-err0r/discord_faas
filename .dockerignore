@@ -1,7 +1,8 @@
-deploy/
+chart/
 pkgs/client
 skaffold.yaml
 initenv.sh
 Dockerfile
 test.Dockerfile
 test/
+**/*_private.*
