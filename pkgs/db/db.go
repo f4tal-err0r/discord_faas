@@ -62,7 +62,6 @@ func NewDB(DBPath string) (*DBHandler, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %v", err)
 	}
-	defer db.Close()
 
 	handler.db = db
 

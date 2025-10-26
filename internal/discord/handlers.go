@@ -2,6 +2,7 @@ package discord
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/bwmarrin/discordgo"
 	pb "github.com/f4tal-err0r/discord_faas/proto"
@@ -28,15 +29,33 @@ type defaultCommandData struct {
 	Function    handlerFunc
 }
 
-func (c *Client) RegisterCommands() error {
+func (c *Client) StartBotHandler() error {
+	if err := c.Session.Open(); err != nil {
+		return fmt.Errorf("error opening discord session: %v", err)
+	}
+
+	log.Print("Bot Started...")
+
+	if err := c.RegisterCommands(); err != nil {
+		return fmt.Errorf("error registering commands: %v", err)
+	}
+
 	c.Session.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-		if i.Type == discordgo.InteractionApplicationCommand {
-			if _, ok := defaultCommands[i.ApplicationCommandData().Name]; ok {
-				s.InteractionRespond(i.Interaction, defaultCommands[i.ApplicationCommandData().Name].Function(i.Interaction, c))
-			}
-			s.InteractionRespond(i.Interaction, cmdRouter(i.Interaction, c))
+		if h, ok := defaultCommands[i.ApplicationCommandData().Name]; ok {
+			s.InteractionRespond(i.Interaction, h.Function(i.Interaction, c))
 		}
+		s.InteractionRespond(i.Interaction, cmdRouter(i.Interaction, c))
 	})
+	return nil
+}
+
+func (c *Client) RegisterCommands() error {
+	//list guilds
+	guilds, err := c.Session.UserGuilds(100, "", "", false)
+	if err != nil {
+		return fmt.Errorf("error getting user guilds: %v", err)
+	}
+
 	var commands []discordgo.ApplicationCommand
 
 	//init default commands
@@ -45,11 +64,6 @@ func (c *Client) RegisterCommands() error {
 			Name:        k,
 			Description: v.Description,
 		})
-	}
-
-	guilds, err := c.Session.UserGuilds(100, "", "", false)
-	if err != nil {
-		return fmt.Errorf("error getting guilds: %v", err)
 	}
 
 	for _, guild := range guilds {
@@ -71,7 +85,6 @@ func (c *Client) RegisterCommands() error {
 				return fmt.Errorf("error creating command on guild %v: %v", guild.ID, err)
 			}
 		}
-
 	}
 
 	return nil
@@ -94,6 +107,13 @@ func loginCommand(i *discordgo.Interaction, c *Client) *discordgo.InteractionRes
 
 	message.Data.Content = "To Login to the command line client, use the following command: `dfaas context connect --url https://" + c.cfg.URLDomain + " --token " + token +
 		"`\nTo Download the CLI Client: https://github.com/f4tal-err0r/discord_faas/"
+
+	guild, err := c.Session.Guild(i.GuildID)
+	if err != nil {
+		log.Printf("Error getting guild info: %v", err)
+	}
+	fmt.Printf("Generated login token for guild %s: user: %s\n", guild.Name, i.Member.User.Username)
+
 	return message
 }
 
@@ -107,12 +127,14 @@ func helpCommand(_ *discordgo.Interaction, _ *Client) *discordgo.InteractionResp
 	}
 }
 
-func cmdRouter(i *discordgo.Interaction, c *Client) *discordgo.InteractionResponse {
-	return &discordgo.InteractionResponse{
+func cmdRouter(_ *discordgo.Interaction, _ *Client) *discordgo.InteractionResponse {
+	message := &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			Content: "TODO: Documentation for the help command",
+			Content: "Command received",
 			Flags:   discordgo.MessageFlagsEphemeral,
 		},
 	}
+
+	return message
 }

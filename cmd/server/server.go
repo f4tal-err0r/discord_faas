@@ -1,12 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/bwmarrin/discordgo"
 	"github.com/f4tal-err0r/discord_faas/api"
 	"github.com/f4tal-err0r/discord_faas/api/context"
 	cauth "github.com/f4tal-err0r/discord_faas/api/context/auth"
@@ -90,12 +92,13 @@ var startCmd = &cobra.Command{
 			log.Fatalf("failed to create router: %v", err)
 		}
 
-		err = dbot.Session.Open()
-		if err != nil {
-			log.Fatalf("ERR: Unable to open discord session: %v", err)
+		if err := dbot.StartBotHandler(); err != nil {
+			log.Fatalf("error starting bot handler: %v", err)
 		}
 
-		log.Print("Bot Started...")
+		// if err := purgeGlobalCommands(dbot.Session); err != nil {
+		// 	log.Fatalf("error purging global commands: %v", err)
+		// }
 
 		stopChan := make(chan os.Signal, 1)
 		signal.Notify(stopChan, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
@@ -117,4 +120,47 @@ var startCmd = &cobra.Command{
 		dbot.Session.Close()
 		log.Print("Bot Shutdown.")
 	},
+}
+
+func purgeGlobalCommands(s *discordgo.Session) error {
+	// Get all global commands (pass empty string for guildID)
+	commands, err := s.ApplicationCommands(s.State.User.ID, "")
+	if err != nil {
+		return fmt.Errorf("failed to get global commands: %w", err)
+	}
+
+	// Delete each command
+	for _, cmd := range commands {
+		err := s.ApplicationCommandDelete(s.State.User.ID, "", cmd.ID)
+		if err != nil {
+			log.Printf("Failed to delete global command %s: %v", cmd.Name, err)
+			continue
+		}
+		log.Printf("Deleted global command: %s", cmd.Name)
+	}
+
+	//delete commands per guild
+	guilds, err := s.UserGuilds(100, "", "", false)
+	if err != nil {
+		return fmt.Errorf("failed to get user guilds: %w", err)
+	}
+
+	for _, guild := range guilds {
+		commands, err := s.ApplicationCommands(s.State.User.ID, guild.ID)
+		if err != nil {
+			log.Printf("Failed to get commands for guild %s: %v", guild.ID, err)
+			continue
+		}
+
+		for _, cmd := range commands {
+			err := s.ApplicationCommandDelete(s.State.User.ID, guild.ID, cmd.ID)
+			if err != nil {
+				log.Printf("Failed to delete command %s in guild %s: %v", cmd.Name, guild.ID, err)
+				continue
+			}
+			log.Printf("Deleted command %s in guild %s", cmd.Name, guild.ID)
+		}
+	}
+	log.Printf("Purged %d global commands", len(commands))
+	return nil
 }

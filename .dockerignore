@@ -6,3 +6,5 @@ Dockerfile
 test.Dockerfile
 test/
 **/*_private.*
+Makefile
+bin/

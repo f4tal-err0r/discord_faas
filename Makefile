@@ -50,10 +50,6 @@ test/cover: protobuf
 build/deploy:
 	GOOS=linux GOARCH=amd64 go build -ldflags='-s' -o=./bin/${BINARY_NAME} ${MAIN_PACKAGE_PATH}
 
-.PHONY: build/client/windows
-build/client/windows: protobuf
-	env GOOS="windows" GOARCH="amd64" CGO_ENABLED="1" CC="x86_64-w64-mingw32-gcc" go build -o=./bin/${BINARY_NAME}.exe ${CLIENT_PACKAGE_PATH}
-
-.PHONY: build/client/linux
-build/client/linux: protobuf
-	GOOS=linux GOARCH=amd64 go build -o=./bin/${BINARY_NAME} ${CLIENT_PACKAGE_PATH}
+.PHONY: build/client
+build/client: protobuf
+	go build -o=./bin/${BINARY_NAME}.exe ${CLIENT_PACKAGE_PATH}
