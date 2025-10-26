@@ -38,19 +38,23 @@ ingress:
           pathType: ImplementationSpecific
   tls: []
       
-resources: {}
-
-discord:
-  botToken: ""
+resources: 
+  limits:
+    cpu: 100m
+    memory: 640Mi
+  requests:
+    cpu: 100m
+    memory: 640Mi
 
 autoscaling:
   enabled: false
 
+discord: 
+  clientid: "" ## Bot client id, fetch in discord developer page
+  botToken: "" ## Bot token, fetch in discord developer page
+
 faas:
   config:
-    discord: 
-      clientid: "" ## Bot client id, fetch in discord developer page
-      adminid: "" ## The admin user snowflake id
     dbpath: "/app/data/dfaas.db"
     domain: "" ## Domain for the bot to use for the API path (ie discord.com)
     storage:
@@ -60,26 +64,24 @@ faas:
         hostname: ""
         username: ""
         password: ""
+    runner:
+      image: "alpine:latest"
+    builder:
+      image: "alpine:latest"
 
 minioSidecar:
   enabled: false
   rootUser: "root-user"
   rootPassword: "minio123"
 
-storage:
-  s3:
-    hostname: ""
-    username: ""
-    password: ""
-
-livenessProbe:
-  httpGet:
-    path: /
-    port: http
-readinessProbe:
-  httpGet:
-    path: /
-    port: http
+# livenessProbe:
+#   httpGet:
+#     path: /
+#     port: http
+# readinessProbe:
+#   httpGet:
+#     path: /
+#     port: http
 
 volumes: []
 

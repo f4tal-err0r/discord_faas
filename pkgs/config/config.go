@@ -18,7 +18,6 @@ type Config struct {
 type Discord struct {
 	Token    string `mapstructure:"token"`
 	ClientID string `mapstructure:"clientid"`
-	AdminUID string `mapstructure:"adminuid"`
 }
 
 type Storage struct {
@@ -62,18 +61,22 @@ func NewPathConfig(path string) (*Config, error) {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
-	requiredConfigs := map[string]string{
-		"discord.token":    cfg.Discord.Token,
-		"discord.clientid": cfg.Discord.ClientID,
-		"storage.path":     cfg.Storage.Path,
+	cfg.Discord.Token = viper.GetString("DISCORD_TOKEN")
+	cfg.Discord.ClientID = viper.GetString("DISCORD_CLIENTID")
+
+	requiredConfigs := map[string]*string{
+		"discord.token":    &cfg.Discord.Token,
+		"discord.clientid": &cfg.Discord.ClientID,
+		"storage.path":     &cfg.Storage.Path,
 	}
 	if cfg.Storage.Type == "s3" {
-		requiredConfigs["storage.s3.hostname"] = cfg.Storage.S3.Hostname
-		requiredConfigs["storage.s3.username"] = cfg.Storage.S3.Username
-		requiredConfigs["storage.s3.password"] = cfg.Storage.S3.Password
+		requiredConfigs["storage.s3.hostname"] = &cfg.Storage.S3.Hostname
+		requiredConfigs["storage.s3.username"] = &cfg.Storage.S3.Username
+		requiredConfigs["storage.s3.password"] = &cfg.Storage.S3.Password
 	}
+
 	for key, value := range requiredConfigs {
-		if value == "" {
+		if *value == "" {
 			return nil, fmt.Errorf("missing config: %s", key)
 		}
 	}

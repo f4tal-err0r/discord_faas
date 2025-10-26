@@ -62,10 +62,11 @@ func NewDB(DBPath string) (*DBHandler, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %v", err)
 	}
+	defer db.Close()
 
 	handler.db = db
 
-	if err := applyMigration(&handler); err != nil {
+	if err := applyMigration(db); err != nil {
 		return nil, fmt.Errorf("failed to apply migration: %v", err)
 	}
 

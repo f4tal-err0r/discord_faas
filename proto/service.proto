@@ -24,3 +24,8 @@ message DiscordResp {
     repeated File Files = 3;
     Funcmeta Funcmeta = 4;
 }
+
+message FuncInit {
+    string GuildId = 1;
+    map<string, string> Secrets = 2;
+}

@@ -29,7 +29,7 @@ type Client struct {
 func NewClient(dbc FaasDB, cfg *config.Config) (*Client, error) {
 	dsession, err := discordgo.New("Bot " + cfg.Discord.Token)
 	if err != nil {
-		log.Fatalf("ERR: %s", err)
+		return nil, fmt.Errorf("new bot init failed: %s", err)
 	}
 
 	return &Client{

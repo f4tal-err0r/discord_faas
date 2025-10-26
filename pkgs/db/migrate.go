@@ -1,10 +1,11 @@
 package db
 
 import (
+	"database/sql"
 	"fmt"
 )
 
-func applyMigration(h *DBHandler) error {
+func applyMigration(db *sql.DB) error {
 	CreateTablesDb := `
 		CREATE TABLE IF NOT EXISTS GuildMetadata (
 			guildid INTEGER PRIMARY KEY,
@@ -54,10 +55,10 @@ func applyMigration(h *DBHandler) error {
 			repo TEXT NOT NULL CHECK (length(repo) > 0),
 			dfaaspath TEXT NOT NULL CHECK (length(dfaaspath) > 0),
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-			commitid TEXT NOT NULL CHECK (length(commitid) > 0),
+			commitid TEXT NOT NULL CHECK (length(commitid) > 0)
 		);
 	`
-	_, err := h.db.Exec(CreateTablesDb)
+	_, err := db.Exec(CreateTablesDb)
 	if err != nil {
 		return fmt.Errorf("failed to create table: %v", err)
 	}

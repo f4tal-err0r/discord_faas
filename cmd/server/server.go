@@ -14,10 +14,7 @@ import (
 	"github.com/f4tal-err0r/discord_faas/pkgs/config"
 	"github.com/f4tal-err0r/discord_faas/pkgs/db"
 	"github.com/f4tal-err0r/discord_faas/pkgs/security"
-	"github.com/f4tal-err0r/discord_faas/pkgs/storage"
 	"github.com/spf13/cobra"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
 var (
@@ -65,23 +62,23 @@ var startCmd = &cobra.Command{
 			log.Fatalf("failed to create discord bot: %v", err)
 		}
 
-		// Creates the in-cluster config
-		config, err := rest.InClusterConfig()
-		if err != nil {
-			log.Fatalf("Error creating in-cluster config: %v", err)
-		}
+		// // Creates the in-cluster config
+		// config, err := rest.InClusterConfig()
+		// if err != nil {
+		// 	log.Fatalf("Error creating in-cluster config: %v", err)
+		// }
 
-		// Create the Kubernetes client
-		clientset, err := kubernetes.NewForConfig(config)
-		if err != nil {
-			log.Fatalf("Error creating Kubernetes client: %v", err)
-		}
+		// // Create the Kubernetes client
+		// clientset, err := kubernetes.NewForConfig(config)
+		// if err != nil {
+		// 	log.Fatalf("Error creating Kubernetes client: %v", err)
+		// }
 
-		// create minio storage
-		storage, err := storage.NewStorage(cfg.Storage)
-		if err != nil {
-			log.Fatalf("failed to create storage client: %v", err)
-		}
+		// // create minio storage
+		// storage, err := storage.NewStorage(cfg.Storage)
+		// if err != nil {
+		// 	log.Fatalf("failed to create storage client: %v", err)
+		// }
 
 		handlers := []api.RouterAdder{
 			cauth.NewAuthHandler(jwtsvc, dbot),

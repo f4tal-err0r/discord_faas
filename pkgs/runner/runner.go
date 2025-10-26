@@ -1,3 +1,3 @@
-package runner 
+package runner
 
 func NewRunner()
