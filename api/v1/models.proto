@@ -55,3 +55,8 @@ message Function {
 	string runtime = 4;
 	string guild_id = 5;
 }
+
+message UploadResp {
+	string hash = 1;
+	string name = 2;
+}

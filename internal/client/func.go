@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 
 	v1 "github.com/f4tal-err0r/discord_faas/api/v1"
@@ -19,7 +20,11 @@ func ListFunctions() {
 	}
 
 	//set auth header
-	req, err := http.NewRequest(http.MethodGet, c.ServerUrl+"/api/functions", nil)
+	funcurl, err := url.JoinPath(c.ServerUrl, "/api/functions", c.GuildId)
+	if err != nil {
+		log.Fatalf("Unable to create function list URL: %v", err)
+	}
+	req, err := http.NewRequest(http.MethodGet, funcurl, nil)
 	if err != nil {
 		log.Fatalf("Unable to create request: %v", err)
 	}

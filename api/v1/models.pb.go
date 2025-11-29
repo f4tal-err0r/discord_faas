@@ -541,6 +541,58 @@ func (x *Function) GetGuildId() string {
 	return ""
 }
 
+type UploadResp struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Hash          string                 `protobuf:"bytes,1,opt,name=hash,proto3" json:"hash,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UploadResp) Reset() {
+	*x = UploadResp{}
+	mi := &file_api_v1_models_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UploadResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UploadResp) ProtoMessage() {}
+
+func (x *UploadResp) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1_models_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UploadResp.ProtoReflect.Descriptor instead.
+func (*UploadResp) Descriptor() ([]byte, []int) {
+	return file_api_v1_models_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *UploadResp) GetHash() string {
+	if x != nil {
+		return x.Hash
+	}
+	return ""
+}
+
+func (x *UploadResp) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
 var File_api_v1_models_proto protoreflect.FileDescriptor
 
 const file_api_v1_models_proto_rawDesc = "" +
@@ -586,7 +638,11 @@ const file_api_v1_models_proto_rawDesc = "" +
 	"\vdescription\x18\x02 \x01(\tR\vdescription\x12\x18\n" +
 	"\aversion\x18\x03 \x01(\tR\aversion\x12\x18\n" +
 	"\aruntime\x18\x04 \x01(\tR\aruntime\x12\x19\n" +
-	"\bguild_id\x18\x05 \x01(\tR\aguildIdB,Z*github.com/f4tal-err0r/discord_faas/api/v1b\x06proto3"
+	"\bguild_id\x18\x05 \x01(\tR\aguildId\"4\n" +
+	"\n" +
+	"UploadResp\x12\x12\n" +
+	"\x04hash\x18\x01 \x01(\tR\x04hash\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04nameB,Z*github.com/f4tal-err0r/discord_faas/api/v1b\x06proto3"
 
 var (
 	file_api_v1_models_proto_rawDescOnce sync.Once
@@ -600,7 +656,7 @@ func file_api_v1_models_proto_rawDescGZIP() []byte {
 	return file_api_v1_models_proto_rawDescData
 }
 
-var file_api_v1_models_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_api_v1_models_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_api_v1_models_proto_goTypes = []any{
 	(*GetContext)(nil),    // 0: v1.GetContext
 	(*Args)(nil),          // 1: v1.Args
@@ -610,6 +666,7 @@ var file_api_v1_models_proto_goTypes = []any{
 	(*ContextResp)(nil),   // 5: v1.ContextResp
 	(*ListFunctions)(nil), // 6: v1.ListFunctions
 	(*Function)(nil),      // 7: v1.Function
+	(*UploadResp)(nil),    // 8: v1.UploadResp
 }
 var file_api_v1_models_proto_depIdxs = []int32{
 	1, // 0: v1.Commands.args:type_name -> v1.Args
@@ -634,7 +691,7 @@ func file_api_v1_models_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_v1_models_proto_rawDesc), len(file_api_v1_models_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

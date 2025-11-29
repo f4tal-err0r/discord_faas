@@ -1,11 +1,13 @@
 package runtimes
 
 import (
+	"bytes"
 	"embed"
 	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
+	"text/template"
 
 	"gopkg.in/yaml.v3"
 )
@@ -48,6 +50,10 @@ func GenerateFunc(name string, runtime string) error {
 	}
 
 	if err := renderDir(filepath.Join("_templates", runtime), funcDir); err != nil {
+		return err
+	}
+
+	if err := renderDfaasYaml(funcDir, runtime, name); err != nil {
 		return err
 	}
 
@@ -124,5 +130,38 @@ func renderDir(runtimeDir, targetDir string) error {
 			fmt.Printf("%s\n", dstPath)
 		}
 	}
+	return nil
+}
+
+func renderDfaasYaml(targetDir string, runtime string, name string) error {
+	// Read the embedded template
+	tmplData, err := RuntimeFiles.ReadFile("_templates/dfaas_tmpl.yaml")
+	if err != nil {
+		return fmt.Errorf("error reading dfaas yaml template: %v", err)
+	}
+
+	// Prepare template values
+	values := map[string]string{
+		"Name":    name,
+		"Runtime": runtime,
+	}
+
+	// Parse and execute template
+	tmpl, err := template.New("dfaas").Parse(string(tmplData))
+	if err != nil {
+		return fmt.Errorf("error parsing dfaas yaml template: %v", err)
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, values); err != nil {
+		return fmt.Errorf("error executing dfaas yaml template: %v", err)
+	}
+
+	// Write to ./dfaas.yaml in targetDir
+	outPath := filepath.Join(targetDir, "dfaas.yaml")
+	if err := os.WriteFile(outPath, buf.Bytes(), 0644); err != nil {
+		return fmt.Errorf("error writing dfaas.yaml: %v", err)
+	}
+
 	return nil
 }

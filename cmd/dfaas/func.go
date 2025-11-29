@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/f4tal-err0r/discord_faas/internal/client"
 	"github.com/f4tal-err0r/discord_faas/pkgs/runtimes"
@@ -17,6 +18,7 @@ func init() {
 	funcCreateCmd.MarkFlagRequired("runtime")
 	funcRootCmd.AddCommand(funcRuntimeCmd)
 	funcRootCmd.AddCommand(funcList)
+	funcRootCmd.AddCommand(funcDeploy)
 }
 
 var funcRootCmd = &cobra.Command{
@@ -25,15 +27,12 @@ var funcRootCmd = &cobra.Command{
 }
 
 var funcCreateCmd = &cobra.Command{
-	Use:   "create",
+	Use:   "create [function_name]",
 	Short: "Create a function",
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) == 0 {
-			fmt.Println("No function name provided")
-			return
-		}
-
-		if err := runtimes.GenerateFunc(args[0], runtime); err != nil {
+		functionName := args[0]
+		if err := runtimes.GenerateFunc(functionName, runtime); err != nil {
 			fmt.Printf("Unable to generate function: %v", err)
 			return
 		}
@@ -53,5 +52,26 @@ var funcList = &cobra.Command{
 	Short: "List available functions",
 	Run: func(cmd *cobra.Command, args []string) {
 		client.ListFunctions()
+	},
+}
+
+var funcDeploy = &cobra.Command{
+	Use:   "deploy [function_path]",
+	Short: "Upload and deploy a function",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) == 0 {
+			fmt.Println("No file path provided")
+			return
+		}
+		if _, err := os.Stat(args[0]); os.IsNotExist(err) {
+			fmt.Printf("Directory does not exist: %s\n", args[0])
+			return
+		}
+
+		if err := client.DeployFunc(args[0]); err != nil {
+			fmt.Printf("Unable to deploy function: %v", err)
+			return
+		}
 	},
 }

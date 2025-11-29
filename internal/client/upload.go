@@ -10,16 +10,21 @@ import (
 	"log"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 
 	api "github.com/f4tal-err0r/discord_faas/api/v1"
+	"google.golang.org/protobuf/proto"
 	"gopkg.in/yaml.v3"
 )
 
-func DeployFunc(context *api.ContextResp, fp string) error {
-
+func DeployFunc(fp string) error {
+	c, err := GetCurrentContext()
+	if err != nil {
+		log.Fatalf("Unable to get current context: %v", err)
+	}
 	metadata, err := marshalFaasYaml(fp)
 	if err != nil {
 		return err
@@ -32,6 +37,7 @@ func DeployFunc(context *api.ContextResp, fp string) error {
 	if err != nil {
 		return err
 	}
+
 	_, err = metapart.Write(metadata)
 	if err != nil {
 		return err
@@ -56,12 +62,17 @@ func DeployFunc(context *api.ContextResp, fp string) error {
 		return err
 	}
 
-	req, err := http.NewRequest("POST", context.GetServerUrl()+"/api/func/deploy", body)
+	funcurl, err := url.JoinPath(c.ServerUrl, "/api/functions", c.GuildId)
+	if err != nil {
+		log.Fatalf("Unable to create function list URL: %v", err)
+	}
+
+	req, err := http.NewRequest("POST", funcurl, body)
 	if err != nil {
 		return err
 	}
 	req.Header.Set("Content-Type", writer.FormDataContentType())
-	req.Header.Set("Authorization", context.GetJwToken())
+	req.Header.Set("Authorization", c.GetJwToken())
 
 	client := http.DefaultClient
 	resp, err := client.Do(req)
@@ -79,6 +90,14 @@ func DeployFunc(context *api.ContextResp, fp string) error {
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("failed to deploy function: %s", respbody)
 	}
+
+	var uploadResp api.UploadResp
+	err = json.Unmarshal(respbody, &uploadResp)
+	if err != nil {
+		return fmt.Errorf("failed to parse deploy response: %v", err)
+	}
+
+	fmt.Sprintf("Function %s uploaded successfully: %s", uploadResp.Name, uploadResp.Hash)
 
 	return nil
 }
@@ -179,7 +198,8 @@ func marshalFaasYaml(fp string) ([]byte, error) {
 	if BuildReq.Runtime == "" {
 		return nil, fmt.Errorf("no runtime found in dfaas.yaml")
 	}
-	metadata, err := json.Marshal(&BuildReq)
+
+	metadata, err := proto.Marshal(&BuildReq)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling to JSON: %v", err)
 	}

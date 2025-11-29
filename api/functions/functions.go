@@ -20,7 +20,7 @@ func NewHandler(cfg *config.Config) *Handler {
 
 func (h *Handler) AddRoute(r *mux.Router) {
 	r.HandleFunc("/api/functions/{guildid}", h.GetFuncsHandler).Methods("GET")
-	r.HandleFunc("/api/functions/{guildid}", h.GetFuncsHandler).Methods("POST")
+	r.HandleFunc("/api/functions/{guildid}", h.DeployFuncHandler).Methods("POST")
 	r.HandleFunc("/api/functions/{guildid}/{hash}", h.GetFuncsHandler).Methods("GET")
 }
 
