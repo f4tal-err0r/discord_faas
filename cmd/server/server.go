@@ -12,6 +12,7 @@ import (
 	"github.com/f4tal-err0r/discord_faas/api"
 	"github.com/f4tal-err0r/discord_faas/api/context"
 	cauth "github.com/f4tal-err0r/discord_faas/api/context/auth"
+	"github.com/f4tal-err0r/discord_faas/api/functions"
 	"github.com/f4tal-err0r/discord_faas/internal/discord"
 	"github.com/f4tal-err0r/discord_faas/pkgs/config"
 	"github.com/f4tal-err0r/discord_faas/pkgs/db"
@@ -54,6 +55,22 @@ var startCmd = &cobra.Command{
 			log.Fatalf("unable to create jwt service: %v", err)
 		}
 
+		//create dir if not exists
+		if _, err := os.Stat(cfg.Filestore); os.IsNotExist(err) {
+			err := os.MkdirAll(cfg.Filestore, os.ModePerm)
+			if err != nil {
+				log.Fatalf("unable to create filestore dir: %v", err)
+			}
+		}
+
+		//create dbpath dir if not exists
+		if _, err := os.Stat(cfg.DBPath); os.IsNotExist(err) {
+			err := os.MkdirAll(cfg.DBPath, os.ModePerm)
+			if err != nil {
+				log.Fatalf("unable to create dbpath dir: %v", err)
+			}
+		}
+
 		dbc, err := db.NewDB(cfg.DBPath)
 		if err != nil {
 			log.Fatalf("unable to create db: %v", err)
@@ -64,27 +81,10 @@ var startCmd = &cobra.Command{
 			log.Fatalf("failed to create discord bot: %v", err)
 		}
 
-		// // Creates the in-cluster config
-		// config, err := rest.InClusterConfig()
-		// if err != nil {
-		// 	log.Fatalf("Error creating in-cluster config: %v", err)
-		// }
-
-		// // Create the Kubernetes client
-		// clientset, err := kubernetes.NewForConfig(config)
-		// if err != nil {
-		// 	log.Fatalf("Error creating Kubernetes client: %v", err)
-		// }
-
-		// // create minio storage
-		// storage, err := storage.NewStorage(cfg.Storage)
-		// if err != nil {
-		// 	log.Fatalf("failed to create storage client: %v", err)
-		// }
-
 		handlers := []api.RouterAdder{
-			cauth.NewAuthHandler(jwtsvc, dbot),
+			cauth.NewAuthHandler(jwtsvc, dbot, cfg),
 			context.NewHandler(dbot, cfg),
+			functions.NewHandler(cfg),
 		}
 
 		r, err := api.NewRouter(jwtsvc, handlers...)

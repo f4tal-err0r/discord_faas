@@ -28,7 +28,7 @@ service:
     port: 8080
 
 ingress:
-  enabled: false
+  enabled: true
   className: ""
   annotations: {}
   hosts:
@@ -60,6 +60,7 @@ faas:
     storage:
       type: "local"
       path: "/app/data/"
+      size: "10Gi"
       s3:
         hostname: ""
         username: ""
@@ -68,20 +69,21 @@ faas:
       image: "alpine:latest"
     builder:
       image: "alpine:latest"
+    JWTSecretKey: "" ## JWT Secret Key for signing tokens, if empty a random one will be generated on startup
 
 minioSidecar:
   enabled: false
   rootUser: "root-user"
   rootPassword: "minio123"
 
-# livenessProbe:
-#   httpGet:
-#     path: /
-#     port: http
-# readinessProbe:
-#   httpGet:
-#     path: /
-#     port: http
+livenessProbe:
+  httpGet:
+    path: /
+    port: http
+readinessProbe:
+  httpGet:
+    path: /
+    port: http
 
 volumes: []
 

@@ -21,8 +21,16 @@ protobuf-template:
 
 .PHONY: protobuf
 protobuf: 
-	protoc --go_opt=paths=source_relative --go_opt=paths=source_relative --go_out=./ --go-grpc_out=./ ./proto/service.proto
+	protoc \
+	  --go_out=. --go_opt=paths=source_relative \
+	  --go-grpc_out=. --go-grpc_opt=paths=source_relative \
+	  ./proto/service.proto
 
+	protoc \
+	  --go_out=. --go_opt=paths=source_relative \
+	  --go-grpc_out=. --go-grpc_opt=paths=source_relative \
+	  ./api/v1/models.proto
+	  
 ## test: run all tests
 .PHONY: test
 test: protobuf
@@ -52,4 +60,4 @@ build/deploy:
 
 .PHONY: build/client
 build/client: protobuf
-	go build -o=./bin/${BINARY_NAME}.exe ${CLIENT_PACKAGE_PATH}
+	go build -o=./bin/${BINARY_NAME} ${CLIENT_PACKAGE_PATH}

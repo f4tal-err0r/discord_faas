@@ -1,12 +1,12 @@
 package context
 
 import (
-	"encoding/json"
 	"net/http"
 	"strings"
 
 	v1 "github.com/f4tal-err0r/discord_faas/api/v1"
 	"github.com/gorilla/mux"
+	"google.golang.org/protobuf/proto"
 )
 
 func (h *Handler) Handler(w http.ResponseWriter, r *http.Request) {
@@ -22,23 +22,26 @@ func (h *Handler) Handler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	guild, err := h.bot.Session.Guild(guildid.(string))
+	//check for 404 and 429
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	} else if strings.Contains(err.Error(), "404") {
-		http.Error(w, "Guild not found", http.StatusNotFound)
-		return
-	} else if strings.Contains(err.Error(), "429") {
-		http.Error(w, "Rate Limit for SelfGuildInfo exceeded", http.StatusTooManyRequests)
-		return
+		if strings.Contains(err.Error(), "404") {
+			http.Error(w, "Guild not found", http.StatusNotFound)
+			return
+		} else if strings.Contains(err.Error(), "429") {
+			http.Error(w, "Rate limited, try again later", http.StatusTooManyRequests)
+			return
+		} else {
+			http.Error(w, "Error fetching guild info", http.StatusInternalServerError)
+			return
+		}
 	}
 
 	ctxresp := v1.ContextResp{
-		ClientID:  h.cfg.Discord.ClientID,
-		GuildID:   guild.ID,
+		ClientId:  h.cfg.Discord.ClientID,
+		GuildId:   guild.ID,
 		GuildName: guild.Name,
 	}
-	resp, err := json.Marshal(ctxresp)
+	resp, err := proto.Marshal(&ctxresp)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

@@ -45,6 +45,15 @@ spec:
           envFrom:
             - secretRef:
                 name: {{ include "discord-faas.fullname" . }}
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}
@@ -66,10 +75,19 @@ spec:
               mountPath: /app/config/config.yaml
               subPath: config.yaml
               readOnly: true
+            {{- if eq .Values.faas.config.storage.type "local" }}
+            - name: artifacts
+              mountPath: {{ .Values.faas.config.storage.path }}
+            {{- end }}
       volumes:
         - name: config
           configMap:
             name: {{ include "discord-faas.fullname" . }}-config
+        {{- if eq .Values.faas.config.storage.type "local" }}
+        - name: artifacts
+          persistentVolumeClaim:
+            claimName: {{ include "discord-faas.fullname" . }}-artifacts
+        {{- end }}
 
 
 

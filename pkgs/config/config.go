@@ -8,11 +8,12 @@ import (
 )
 
 type Config struct {
-	Discord   Discord `mapstructure:"discord"`
-	Filestore string  `mapstructure:"filestore"`
-	DBPath    string  `mapstructure:"dbpath"`
-	URLDomain string  `mapstructure:"domain"`
-	Storage   Storage `mapstructure:"storage"`
+	Discord   Discord  `mapstructure:"discord"`
+	Filestore string   `mapstructure:"filestore"`
+	DBPath    string   `mapstructure:"dbpath"`
+	URLDomain string   `mapstructure:"domain"`
+	Storage   Storage  `mapstructure:"storage"`
+	Admins    []string `mapstructure:"admins"`
 }
 
 type Discord struct {
