@@ -1,0 +1,29 @@
+package functions
+
+import (
+	"github.com/f4tal-err0r/discord_faas/pkgs/config"
+	"github.com/gorilla/mux"
+)
+
+type Handler struct {
+	cfg config.Config
+}
+
+type Platform interface {
+}
+
+func NewHandler(cfg *config.Config) *Handler {
+	return &Handler{
+		cfg: *cfg,
+	}
+}
+
+func (h *Handler) AddRoute(r *mux.Router) {
+	r.HandleFunc("/api/functions/{guildid}", h.GetFuncsHandler).Methods("GET")
+	r.HandleFunc("/api/functions/{guildid}", h.GetFuncsHandler).Methods("POST")
+	r.HandleFunc("/api/functions/{guildid}/{hash}", h.GetFuncsHandler).Methods("GET")
+}
+
+func (h *Handler) IsSecure() bool {
+	return true
+}

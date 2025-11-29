@@ -1,0 +1,14 @@
+name: golang-dfaas
+lang: golang
+version: 0.0.1
+lockedFiles:
+  - main.go
+  - proto/
+build:
+  image: golang:1.21
+  commands:
+    - go mod download
+    - go build -o ${BINPATH}/main ${BUILDDIR}/main.go
+run:
+  commands:
+    - ${BINPATH}/main

@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package v1;
+option go_package = "github.com/f4tal-err0r/discord_faas/api/v1";
+
+message GetContext {
+	string token = 1;
+	string guild_id = 2;
+}
+
+message Args {
+	string name = 1;
+	string description = 2;
+	bool required = 3;
+}
+
+message Commands {
+	string name = 1;
+	string description = 2;
+	repeated Args args = 3;
+}
+
+message EnvVar {
+	string name = 1;
+	string value = 2;
+}
+
+message BuildFunc {
+	string name = 1;
+	string runtime = 2;
+	string guild_id = 3;
+	string version = 4;
+	string description = 5;
+	repeated Commands commands = 6;
+	repeated EnvVar envvars = 7;
+}
+
+message ContextResp {
+	string client_id = 1;
+	string guild_id = 2;
+	string guild_name = 3;
+	string server_url = 4;
+	bool current_context = 5;
+	string jw_token = 6;
+}
+
+message ListFunctions {
+	repeated Function functions = 1;
+}
+
+message Function {
+	string name = 1;
+	string description = 2;
+	string version = 3;
+	string runtime = 4;
+	string guild_id = 5;
+}
