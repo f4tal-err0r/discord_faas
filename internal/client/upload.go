@@ -92,12 +92,12 @@ func DeployFunc(fp string) error {
 	}
 
 	var uploadResp api.UploadResp
-	err = json.Unmarshal(respbody, &uploadResp)
+	err = proto.Unmarshal(respbody, &uploadResp)
 	if err != nil {
 		return fmt.Errorf("failed to parse deploy response: %v", err)
 	}
 
-	fmt.Sprintf("Function %s uploaded successfully: %s", uploadResp.Name, uploadResp.Hash)
+	fmt.Printf("Function %s uploaded successfully: %s", uploadResp.Name, uploadResp.Hash)
 
 	return nil
 }

@@ -32,6 +32,7 @@ type Runtime struct {
 type Function struct {
 	ID          int       `json:"id"`
 	Name        string    `json:"name"`
+	Hash        string    `json:"hash"`
 	Description string    `json:"description"`
 	Runtime     string    `json:"runtime"`
 	CreatedAt   time.Time `json:"created_at"`
@@ -143,8 +144,8 @@ func (h *DBHandler) InsertFunction(f Function) error {
 	}
 	f.RuntimeID = runtime.ID
 
-	_, err = h.db.Exec("INSERT INTO Functions (name, description, runtime, guildid, runtimeid) VALUES (?, ?, ?, ?, ?)",
-		f.Name, f.Description, f.Runtime, f.GuildID, f.RuntimeID)
+	_, err = h.db.Exec("INSERT INTO Functions (name, hash, description, runtime, guildid, runtimeid) VALUES (?, ?, ?, ?, ?, ?)",
+		f.Name, f.Hash, f.Description, f.Runtime, f.GuildID, f.RuntimeID)
 	if err != nil {
 		return fmt.Errorf("failed to insert function %s: %v", f.Name, err)
 	}
@@ -153,7 +154,7 @@ func (h *DBHandler) InsertFunction(f Function) error {
 
 // GetFunctionsByGuild retrieves functions for a given guild
 func (h *DBHandler) GetFunctionsByGuild(guildID int) ([]Function, error) {
-	rows, err := h.db.Query("SELECT id, name, description, runtime, created_at, updated_at, guildid FROM Functions WHERE guildid = ?", guildID)
+	rows, err := h.db.Query("SELECT id, name, hash, description, runtime, created_at, updated_at, guildid FROM Functions WHERE guildid = ?", guildID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query functions for guild %d: %v", guildID, err)
 	}
@@ -162,7 +163,7 @@ func (h *DBHandler) GetFunctionsByGuild(guildID int) ([]Function, error) {
 	var functions []Function
 	for rows.Next() {
 		var f Function
-		if err := rows.Scan(&f.ID, &f.Name, &f.Description, &f.Runtime, &f.CreatedAt, &f.UpdatedAt, &f.GuildID); err != nil {
+		if err := rows.Scan(&f.ID, &f.Name, &f.Hash, &f.Description, &f.Runtime, &f.CreatedAt, &f.UpdatedAt, &f.GuildID); err != nil {
 			return nil, fmt.Errorf("failed to scan function for guild %d: %v", guildID, err)
 		}
 		functions = append(functions, f)

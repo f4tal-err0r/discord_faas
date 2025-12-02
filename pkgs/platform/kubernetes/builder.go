@@ -71,6 +71,10 @@ func (b *Builder) Start(ctx *context.Context) error {
 	return nil
 }
 
+func (c *Builder) StreamLogs() error {
+	return nil
+}
+
 func createHash() string {
 	b := make([]byte, 3)
 	_, err := rand.Read(b)

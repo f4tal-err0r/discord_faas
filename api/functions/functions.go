@@ -1,6 +1,8 @@
 package functions
 
 import (
+	"context"
+
 	"github.com/f4tal-err0r/discord_faas/pkgs/config"
 	"github.com/gorilla/mux"
 )
@@ -10,6 +12,7 @@ type Handler struct {
 }
 
 type Platform interface {
+	Start(ctx *context.Context) error
 }
 
 func NewHandler(cfg *config.Config) *Handler {

@@ -67,8 +67,14 @@ func ProtectedFilesFunc(fp string, runtime string) error {
 	}
 
 	for _, lockedFile := range rc.LockedFiles {
-		srcPath := filepath.Join(runtime, lockedFile)
+		srcPath := filepath.Join("_templates", runtime, lockedFile)
 		dstPath := filepath.Join(fp, lockedFile)
+
+		info, err := os.Stat(dstPath)
+		if err == nil && info.IsDir() {
+			renderDir(srcPath, dstPath)
+			continue
+		}
 
 		data, err := RuntimeFiles.ReadFile(srcPath)
 		if err != nil {
@@ -86,7 +92,7 @@ func GetRuntimeConfig(runtime string) (*RuntimeConfig, error) {
 		return nil, fmt.Errorf("invalid runtime: %s", runtime)
 	}
 
-	data, err := RuntimeFiles.ReadFile(filepath.Join(runtime, "runtime.yaml"))
+	data, err := RuntimeFiles.ReadFile(filepath.Join("_templates", runtime, "runtime.yaml"))
 	if err != nil {
 		return nil, fmt.Errorf("error reading runtime config: %v", err)
 	}
@@ -127,7 +133,6 @@ func renderDir(runtimeDir, targetDir string) error {
 			if err := os.WriteFile(dstPath, data, 0644); err != nil {
 				return fmt.Errorf("error writing file %s: %v", dstPath, err)
 			}
-			fmt.Printf("%s\n", dstPath)
 		}
 	}
 	return nil
