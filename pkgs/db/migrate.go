@@ -1,15 +1,26 @@
 package db
 
 import (
+	"database/sql"
 	"fmt"
 )
 
-func applyMigration(h *DBHandler) error {
+func applyMigration(db *sql.DB) error {
 	CreateTablesDb := `
 		CREATE TABLE IF NOT EXISTS GuildMetadata (
 			guildid INTEGER PRIMARY KEY,
 			name TEXT NOT NULL CHECK (length(name) > 0),
 			owner TEXT NOT NULL
+		);
+
+		CREATE TABLE IF NOT EXISTS Runtimes (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			name TEXT NOT NULL CHECK (length(name) > 0) UNIQUE,
+			lang TEXT NOT NULL CHECK (length(lang) > 0),
+			repo TEXT NOT NULL CHECK (length(repo) > 0),
+			path TEXT NOT NULL CHECK (length(path) > 0),
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			commitid TEXT NOT NULL CHECK (length(commitid) > 0)
 		);
 
 		CREATE TABLE IF NOT EXISTS Functions (
@@ -20,6 +31,8 @@ func applyMigration(h *DBHandler) error {
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			guildid INTEGER NOT NULL,
+			runtimeid INTEGER NOT NULL,
+			FOREIGN KEY (runtimeid) REFERENCES Runtimes(id),
 			FOREIGN KEY (guildid) REFERENCES GuildMetadata(guildid) ON DELETE CASCADE
 		);
 
@@ -36,6 +49,8 @@ func applyMigration(h *DBHandler) error {
 			command TEXT NOT NULL CHECK (length(command) > 0),
 			description TEXT NOT NULL,
 			guildid INTEGER NOT NULL,
+			functionid INTEGER NOT NULL,
+			FOREIGN KEY (functionid) REFERENCES Functions(id) ON DELETE CASCADE,
 			FOREIGN KEY (guildid) REFERENCES GuildMetadata(guildid) ON DELETE CASCADE
 		);
 
@@ -46,18 +61,8 @@ func applyMigration(h *DBHandler) error {
 			description TEXT NOT NULL,
 			FOREIGN KEY (command_id) REFERENCES Commands(id) ON DELETE CASCADE
 		);
-
-		CREATE TABLE IF NOT EXISTS Runtimes (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			name TEXT NOT NULL CHECK (length(name) > 0),
-			lang TEXT NOT NULL CHECK (length(lang) > 0),
-			repo TEXT NOT NULL CHECK (length(repo) > 0),
-			dfaaspath TEXT NOT NULL CHECK (length(dfaaspath) > 0),
-			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-			commitid TEXT NOT NULL CHECK (length(commitid) > 0),
-		);
 	`
-	_, err := h.db.Exec(CreateTablesDb)
+	_, err := db.Exec(CreateTablesDb)
 	if err != nil {
 		return fmt.Errorf("failed to create table: %v", err)
 	}

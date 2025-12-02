@@ -1,0 +1,12 @@
+{{- if eq .Values.faas.config.storage.type "local" }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "discord-faas.fullname" . }}-artifacts
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: {{ .Values.faas.config.storage.size | default "10Gi" }}
+{{- end }}

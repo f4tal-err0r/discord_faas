@@ -1,0 +1,29 @@
+## Write a skaffold manifest for building and deploying the application.
+apiVersion: skaffold/v4beta13
+kind: Config
+metadata:
+  name: discord-faas
+build:
+  artifacts:
+  - image: discord-faas-server-dev
+    context: .
+    docker:
+      dockerfile: ./Dockerfile
+  local:
+    push: false
+    useBuildkit: true
+
+deploy: 
+  helm:
+    releases:
+    - name: discord-faas
+      chartPath: chart/discord-faas
+      valuesFiles:
+      - chart/discord-faas/values.yaml
+      - chart/discord-faas/values_private.yaml
+      namespace: faas
+      wait: true
+      createNamespace: true
+      setValues:
+          image.repository: discord-faas-server-dev
+          image.tag: latest

@@ -1,14 +1,14 @@
 name: golang-dfaas
 lang: golang
-version: 0.1.0
-readOnlyFiles:
+version: 0.0.1
+lockedFiles:
   - main.go
   - proto/
 build:
   image: golang:1.21
   commands:
     - go mod download
-    - go build -o main .
+    - go build -o ${BINPATH}/main ${BUILDDIR}/main.go
 run:
-  image: gcr.io/distroless/base-debian12
-  command: ["./main"]
+  commands:
+    - ${BINPATH}/main

@@ -6,10 +6,9 @@ import (
 	"net/http"
 
 	"github.com/f4tal-err0r/discord_faas/pkgs/security"
+	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 )
-
-var publicKey string
 
 type wsHandler func(conn *websocket.Conn, r *http.Request)
 
@@ -58,7 +57,17 @@ func (j *JWTMiddleware) JWTMiddleware(next http.Handler) http.Handler {
 			http.Error(w, "Unauthorized: Invalid token", http.StatusUnauthorized)
 			return
 		}
-		ctx := context.WithValue(r.Context(), "claims", claims)
+		ctx := context.WithValue(r.Context(), "claims", *claims)
+
+		vars := mux.Vars(r)
+
+		if guildid, ok := vars["guildid"]; ok {
+			if claims.GuildID != guildid {
+				http.Error(w, "Forbidden: Access to this guild is denied", http.StatusForbidden)
+				return
+			}
+		}
+
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

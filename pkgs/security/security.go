@@ -2,7 +2,7 @@ package security
 
 import (
 	"crypto/rand"
-	"encoding/hex"
+	"os"
 
 	jwt "github.com/golang-jwt/jwt/v5"
 )
@@ -14,14 +14,27 @@ type JWTService struct {
 type Claims struct {
 	UserID  string
 	GuildID string
+	Admin   bool
 
 	jwt.RegisteredClaims
 }
 
 func NewJWT() (*JWTService, error) {
-	secretKey := make([]byte, 32)
-	if _, err := rand.Read(secretKey); err != nil {
-		return nil, err
+	var secretKey []byte
+	var err error
+
+	if os.Getenv("JWT_SECRET_KEY") != "" {
+		keyBytes := []byte(os.Getenv("JWT_SECRET_KEY"))
+		if err != nil {
+			return nil, err
+		}
+		secretKey = keyBytes
+	} else {
+		secretKey, err = generateSecretKey()
+		if err != nil {
+			return nil, err
+		}
+
 	}
 	return &JWTService{secretKey: secretKey}, nil
 }
@@ -64,10 +77,10 @@ func (t *JWTService) ParseToken(tokenString string) (*Claims, error) {
 	return claims, nil
 }
 
-func (t *JWTService) GenerateSecretKey() (string, error) {
+func generateSecretKey() ([]byte, error) {
 	secretKey := make([]byte, 32)
 	if _, err := rand.Read(secretKey); err != nil {
-		return "", err
+		return nil, err
 	}
-	return hex.EncodeToString(secretKey), nil
+	return secretKey, nil
 }

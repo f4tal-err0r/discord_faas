@@ -333,7 +333,10 @@ const file_proto_service_proto_rawDesc = "" +
 	"\aSecrets\x18\x02 \x03(\v2\x16.FuncInit.SecretsEntryR\aSecrets\x1a:\n" +
 	"\fSecretsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B+Z)github.com/f4tal-err0r/discord_faas/protob\x06proto3"
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x012p\n" +
+	"\vDiscordFaaS\x125\n" +
+	"\x14HandleDiscordCommand\x12\x0f.DiscordContent\x1a\f.DiscordResp\x12*\n" +
+	"\x12InitializeFunction\x12\t.FuncInit\x1a\t.FuncmetaB+Z)github.com/f4tal-err0r/discord_faas/protob\x06proto3"
 
 var (
 	file_proto_service_proto_rawDescOnce sync.Once
@@ -363,8 +366,12 @@ var file_proto_service_proto_depIdxs = []int32{
 	1, // 2: DiscordResp.Files:type_name -> File
 	0, // 3: DiscordResp.Funcmeta:type_name -> Funcmeta
 	6, // 4: FuncInit.Secrets:type_name -> FuncInit.SecretsEntry
-	5, // [5:5] is the sub-list for method output_type
-	5, // [5:5] is the sub-list for method input_type
+	2, // 5: DiscordFaaS.HandleDiscordCommand:input_type -> DiscordContent
+	4, // 6: DiscordFaaS.InitializeFunction:input_type -> FuncInit
+	3, // 7: DiscordFaaS.HandleDiscordCommand:output_type -> DiscordResp
+	0, // 8: DiscordFaaS.InitializeFunction:output_type -> Funcmeta
+	7, // [7:9] is the sub-list for method output_type
+	5, // [5:7] is the sub-list for method input_type
 	5, // [5:5] is the sub-list for extension type_name
 	5, // [5:5] is the sub-list for extension extendee
 	0, // [0:5] is the sub-list for field type_name
@@ -383,7 +390,7 @@ func file_proto_service_proto_init() {
 			NumEnums:      0,
 			NumMessages:   7,
 			NumExtensions: 0,
-			NumServices:   0,
+			NumServices:   1,
 		},
 		GoTypes:           file_proto_service_proto_goTypes,
 		DependencyIndexes: file_proto_service_proto_depIdxs,

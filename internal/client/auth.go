@@ -31,7 +31,7 @@ func NewUserAuth(opts ...func(*DiscordUserAuth)) *DiscordUserAuth {
 		opt(&userauth)
 	}
 	oauthCfg := &oauth2.Config{
-		ClientID:    context.ClientID,
+		ClientID:    context.GetClientId(),
 		RedirectURL: "http://localhost:8085/callback",
 		Scopes:      []string{"guilds", "guilds.members.read", "identify"},
 		Endpoint: oauth2.Endpoint{

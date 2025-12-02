@@ -1,5 +1,6 @@
 # Change these variables as necessary.
-MAIN_PACKAGE_PATH := ./cmd/server
+SERVER_PACKAGE_PATH := ./cmd/server
+CLIENT_PACKAGE_PATH := ./cmd/dfaas
 BINARY_NAME := dfaas
 EXCLUDE_TEST := "TestContext"
 
@@ -20,8 +21,16 @@ protobuf-template:
 
 .PHONY: protobuf
 protobuf: 
-	protoc --go_opt=paths=source_relative --go_opt=paths=source_relative --go_out=./ --go-grpc_out=./ ./proto/service.proto
+	protoc \
+	  --go_out=. --go_opt=paths=source_relative \
+	  --go-grpc_out=. --go-grpc_opt=paths=source_relative \
+	  ./proto/service.proto
 
+	protoc \
+	  --go_out=. --go_opt=paths=source_relative \
+	  --go-grpc_out=. --go-grpc_opt=paths=source_relative \
+	  ./api/v1/models.proto
+	  
 ## test: run all tests
 .PHONY: test
 test: protobuf
@@ -45,29 +54,10 @@ test/cover: protobuf
 	go test -v -race -buildvcs -coverprofile=/tmp/coverage.out $(shell go list ./... | grep -v 'runtime/')
 	go tool cover -html=/tmp/coverage.out
 
-## build: build the application
-.PHONY: build
-build: protobuf
-	go build -o=./bin/${BINARY_NAME} ${MAIN_PACKAGE_PATH}
-
-.PHONY: build/windows
-build/windows: protobuf
-	env GOOS="windows" GOARCH="amd64" CGO_ENABLED="1" CC="x86_64-w64-mingw32-gcc" go build -o=./bin/${BINARY_NAME}.exe ${MAIN_PACKAGE_PATH}
-
-## run: run the  application
-.PHONY: run
-run: build
-	./bin/${BINARY_NAME}
-
-.PHONY: run/live
-run/live: protobuf
-	go run github.com/cosmtrek/air@v1.52.0 \
-		--build.cmd "make build" --build.bin "./bin/${BINARY_NAME}" --build.delay "100" \
-		--build.args_bin "server,start" \
-		--build.exclude_dir "runtimes,bin" \
-		--misc.clean_on_exit "true"
-
-## production/deploy: deploy the application to production
-.PHONY: production/deploy
-production/deploy:
+.PHONY: build/server
+build/deploy:
 	GOOS=linux GOARCH=amd64 go build -ldflags='-s' -o=./bin/${BINARY_NAME} ${MAIN_PACKAGE_PATH}
+
+.PHONY: build/client
+build/client: protobuf
+	go build -o=./bin/${BINARY_NAME} ${CLIENT_PACKAGE_PATH}

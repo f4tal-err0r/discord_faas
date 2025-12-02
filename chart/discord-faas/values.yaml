@@ -28,7 +28,7 @@ service:
     port: 8080
 
 ingress:
-  enabled: false
+  enabled: true
   className: ""
   annotations: {}
   hosts:
@@ -38,39 +38,43 @@ ingress:
           pathType: ImplementationSpecific
   tls: []
       
-resources: {}
-
-discord:
-  botToken: ""
+resources: 
+  limits:
+    cpu: 100m
+    memory: 640Mi
+  requests:
+    cpu: 100m
+    memory: 640Mi
 
 autoscaling:
   enabled: false
 
+discord: 
+  clientid: "" ## Bot client id, fetch in discord developer page
+  botToken: "" ## Bot token, fetch in discord developer page
+
 faas:
   config:
-    discord: 
-      clientid: "" ## Bot client id, fetch in discord developer page
-      adminid: "" ## The admin user snowflake id
     dbpath: "/app/data/dfaas.db"
     domain: "" ## Domain for the bot to use for the API path (ie discord.com)
     storage:
       type: "local"
       path: "/app/data/"
+      size: "10Gi"
       s3:
         hostname: ""
         username: ""
         password: ""
+    runner:
+      image: "alpine:latest"
+    builder:
+      image: "alpine:latest"
+    JWTSecretKey: "" ## JWT Secret Key for signing tokens, if empty a random one will be generated on startup
 
 minioSidecar:
   enabled: false
   rootUser: "root-user"
   rootPassword: "minio123"
-
-storage:
-  s3:
-    hostname: ""
-    username: ""
-    password: ""
 
 livenessProbe:
   httpGet:
